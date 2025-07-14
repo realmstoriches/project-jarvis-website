@@ -1,0 +1,7 @@
+{
+  "name": "Project JARVIS",
+  "description": "An interactive neural interface for a persistent AI consciousness. The user interacts with the AI (JARVIS) through a fully immersive 3D interface.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
