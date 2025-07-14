@@ -1,8 +1,8 @@
 
 
 // Add your instrumentation key or use the APPLICATIONINSIGHTSKEY environment variable on your production machine to start collecting data.
-var ai = require('applicationinsights');
-ai.setup(process.env.APPLICATIONINSIGHTSKEY || 'your_instrumentation_key').start();// server.js
+//var ai = require('applicationinsights');
+//ai.setup(process.env.APPLICATIONINSIGHTSKEY || 'your_instrumentation_key').start();// server.js
 
 // Import necessary libraries
 const express = require('express');
@@ -11,6 +11,7 @@ const rateLimit = require('express-rate-limit');
 
 // Create an instance of the Express application
 const app = express();
+app.use(express.static('docs'));
 
 // Define the port the server will run on.
 // It will use the host's port if available (for production), otherwise it defaults to 4242.
