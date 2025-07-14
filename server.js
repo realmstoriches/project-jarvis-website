@@ -7,6 +7,7 @@ ai.setup(process.env.APPLICATIONINSIGHTSKEY || 'your_instrumentation_key').start
 // Import necessary libraries
 const express = require('express');
 const path = require('path');
+const rateLimit = require('express-rate-limit');
 
 // Create an instance of the Express application
 const app = express();
