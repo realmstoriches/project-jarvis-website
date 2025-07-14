@@ -1,32 +1,37 @@
-
-
-// Add your instrumentation key or use the APPLICATIONINSIGHTSKEY environment variable on your production machine to start collecting data.
-//var ai = require('applicationinsights');
-//ai.setup(process.env.APPLICATIONINSIGHTSKEY || 'your_instrumentation_key').start();// server.js
+// server.js
 
 // Import necessary libraries
 const express = require('express');
 const path = require('path');
-const rateLimit = require('express-rate-limit');
+const rateLimit = require('express-rate-limit'); // Assuming you will use this later
 
 // Create an instance of the Express application
 const app = express();
-app.use(express.static('docs'));
 
 // Define the port the server will run on.
-// It will use the host's port if available (for production), otherwise it defaults to 4242.
+// Render will set this automatically. For local testing, it defaults to 4242.
 const PORT = process.env.PORT || 4242;
 
-// This is the most important line for your frontend.
-// It tells Express that the 'public' folder contains static files
-// (like HTML, CSS, images, and your Jarvis app) that can be served directly.
-app.use(express.static(path.join(__dirname, 'public')));
+// --- This is the ONLY line you need to serve your website files ---
+// It tells Express that the 'docs' folder is the root of your website
+// and contains all static files (HTML, CSS, images, and your Jarvis app).
+app.use(express.static(path.join(__dirname, 'docs')));
 
-// This route ensures that if someone visits the root URL (e.g., http://localhost:4242),
-// they are served your main index.html file.
+
+// --- This is a fallback route for the main page ---
+// This ensures that any direct visit to your site's root domain (like yourdomain.onrender.com)
+// will always serve the main index.html file from your 'docs' folder.
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'docs', 'index.html'));
 });
 
+
+// Add any other server-side routes or API endpoints for Stripe/Gemini below this line.
+// For example:
+// app.post('/api/stripe-payment', (req, res) => {
+//   // Your Stripe payment logic would go here
+// });
+
+
 // This starts the server and makes it listen for incoming requests on the defined port.
-app.listen(PORT, () => console.log(`Server is running on http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
