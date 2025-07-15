@@ -1,0 +1,25 @@
+# Exported from Render on 2025-07-15T03:08:25Z
+services:
+- type: web
+  name: project-jarvis-website
+  runtime: node
+  repo: https://github.com/realmstoriches/project-jarvis-website
+  plan: free
+  envVars:
+  - key: GEMINI_API_KEY
+    sync: false
+  - key: STRIPE_SECRET_KEY
+    sync: false
+  - key: STRIPE_PUBLISHABLE_KEY
+    sync: false
+  region: ohio
+  buildCommand: npm install
+  startCommand: node server.js
+  domains:
+  - realmstoriches.xyz
+  - www.realmstoriches.xyz
+  autoDeployTrigger: commit
+  previews:
+    generation: automatic
+  renderSubdomainPolicy: disabled
+version: "1"
