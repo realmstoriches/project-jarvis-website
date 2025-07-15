@@ -1,93 +1,72 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
+   <!-- Main Homepage - Highest Priority -->
    <url>
-      <loc>https://realmstoriches.github.io/</loc>
-      <lastmod>2025-05-05</lastmod> <changefreq>weekly</changefreq>
+      <loc>https://www.realmstoriches.xyz/</loc>
+      <lastmod>2025-07-15</lastmod>
+      <changefreq>weekly</changefreq>
       <priority>1.0</priority>
    </url>
 
+   <!-- Core Content Pages -->
    <url>
-      <loc>https://realmstoriches.github.io/about.html</loc>
-      <lastmod>2025-05-05</lastmod> <changefreq>monthly</changefreq>
+      <loc>https://www.realmstoriches.xyz/about.html</loc>
+      <lastmod>2025-07-15</lastmod>
+      <changefreq>monthly</changefreq>
       <priority>0.8</priority>
    </url>
+   <url>
+      <loc>https://www.realmstoriches.xyz/customhits.html</loc>
+      <lastmod>2025-07-15</lastmod>
+      <changefreq>monthly</changefreq>
+      <priority>0.7</priority>
+   </url>
+   <url>
+      <loc>https://www.realmstoriches.xyz/shopify-offer.html</loc>
+      <lastmod>2025-07-15</lastmod>
+      <changefreq>monthly</changefreq>
+      <priority>0.7</priority>
+   </url>
 
+   <!-- Anchor Links to Sections on the Homepage -->
    <url>
-      <loc>https://realmstoriches.github.io/shopify-offer.html</loc>
-      <lastmod>2025-05-05</lastmod> <changefreq>monthly</changefreq> <priority>0.7</priority> </url>
+      <loc>https://www.realmstoriches.xyz/index.html#our-services</loc>
+      <lastmod>2025-07-15</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <loc>https://www.realmstoriches.xyz/index.html#courses</loc>
+      <lastmod>2025-07-15</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.8</priority>
+   </url>
+   <url>
+      <loc>https://www.realmstoriches.xyz/index.html#tools</loc>
+      <lastmod>2025-07-15</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.7</priority>
+   </url>
+   <url>
+      <loc>https://www.realmstoriches.xyz/index.html#jarvis-3.5-section</loc>
+      <lastmod>2025-07-15</lastmod>
+      <changefreq>monthly</changefreq>
+      <priority>0.9</priority>
+   </url>
 
-    <url>
-      <loc>https://realmstoriches.github.io/terms-of-service.html</loc>
-      <lastmod>2025-05-05</lastmod> <changefreq>yearly</changefreq>
-      <priority>0.5</priority>
-   </url>
-
-    <url>
-      <loc>https://realmstoriches.github.io/privacy-policy.html</loc>
-      <lastmod>2025-05-05</lastmod> <changefreq>yearly</changefreq>
-      <priority>0.5</priority>
+   <!-- Legal Pages -->
+   <url>
+      <loc>https://www.realmstoriches.xyz/terms-of-service.html</loc>
+      <lastmod>2025-07-15</lastmod>
+      <changefreq>yearly</changefreq>
+      <priority>0.3</priority>
    </url>
    <url>
-      <loc>https://realmstoriches.github.io/ampcast.html</loc>
-      <lastmod>2025-05-05</lastmod> <changefreq>yearly</changefreq>
-      <priority>0.5</priority>
+      <loc>https://www.realmstoriches.xyz/privacy-policy.html</loc>
+      <lastmod>2025-07-15</lastmod>
+      <changefreq>yearly</changefreq>
+      <priority>0.3</priority>
    </url>
-   <url>
-      <loc>https://realmstoriches.github.io/courses.html</loc>
-      <lastmod>2025-05-05</lastmod> <changefreq>yearly</changefreq>
-      <priority>0.5</priority>
-   </url>
-   <url>
-      <loc>https://realmstoriches.github.io/services.html</loc>
-      <lastmod>2025-05-05</lastmod> <changefreq>yearly</changefreq>
-      <priority>0.5</priority>
-   </url>
-   <url>
-      <loc>https://realmstoriches.github.io/checkout.html</loc>
-      <lastmod>2025-05-05</lastmod> <changefreq>yearly</changefreq>
-      <priority>0.5</priority>
-   </url>
-   <url>
-      <loc>https://realmstoriches.github.io/view-cart.html</loc>
-      <lastmod>2025-05-05</lastmod> <changefreq>yearly</changefreq>
-      <priority>0.5</priority>
-   </url>
-   <url>
-      <loc>https://realmstoriches.github.io/tools.html</loc>
-      <lastmod>2025-05-05</lastmod> <changefreq>yearly</changefreq>
-      <priority>0.5</priority>
-   </url>
-   <url>
-      <loc>https://realmstoriches.github.io/.html</loc>
-      <lastmod>2025-05-05</lastmod> <changefreq>yearly</changefreq>
-      <priority>0.5</priority>
-   </url>
-   <url>
-      <loc>https://realmstoriches.github.io/success.html</loc>
-      <lastmod>2025-05-05</lastmod> <changefreq>yearly</changefreq>
-      <priority>0.5</priority>
-   </url>
-   <url>
-      <loc>https://realmstoriches.github.io/cancel.html</loc>
-      <lastmod>2025-05-05</lastmod> <changefreq>yearly</changefreq>
-      <priority>0.5</priority>
-   </url>
-   <url>
-      <loc>https://realmstoriches.github.io/builder-form.html</loc>
-      <lastmod>2025-05-05</lastmod> <changefreq>yearly</changefreq>
-      <priority>0.5</priority>
-   </url>
-   <url>
-      <loc>https://realmstoriches.github.io/index.html</loc>
-      <lastmod>2025-05-05</lastmod> <changefreq>yearly</changefreq>
-      <priority>0.5</priority>
-   </url>
-   <url>
-      <loc>https://realmstoriches.github.io/website-design-service-page.html</loc>
-      <lastmod>2025-05-05</lastmod> <changefreq>yearly</changefreq>
-      <priority>0.5</priority>
-   </url>
-   
 
 </urlset>
