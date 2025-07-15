@@ -1,37 +1,37 @@
 // server.js
 
-// Import necessary libraries
 const express = require('express');
 const path = require('path');
-const rateLimit = require('express-rate-limit'); // Assuming you will use this later
 
-// Create an instance of the Express application
 const app = express();
-
-// Define the port the server will run on.
-// Render will set this automatically. For local testing, it defaults to 4242.
 const PORT = process.env.PORT || 4242;
 
-// --- This is the ONLY line you need to serve your website files ---
-// It tells Express that the 'docs' folder is the root of your website
-// and contains all static files (HTML, CSS, images, and your Jarvis app).
-app.use(express.static(path.join(__dirname, 'docs')));
+// --- Step 1: Define the absolute path to your static files ---
+// We use path.resolve for a more reliable path than path.join.
+const staticFilesPath = path.resolve(__dirname, 'docs');
 
+// --- Step 2: Log the path to make sure it's correct ---
+// This will show up in your Render logs. We can see if the path is right.
+console.log(`Serving static files from: ${staticFilesPath}`);
 
-// --- This is a fallback route for the main page ---
-// This ensures that any direct visit to your site's root domain (like yourdomain.onrender.com)
-// will always serve the main index.html file from your 'docs' folder.
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'docs', 'index.html'));
+// --- Step 3: Serve the static files ---
+// This tells Express to serve all files from the 'docs' folder.
+app.use(express.static(staticFilesPath));
+
+// --- Step 4: A "catch-all" route for Single Page Applications ---
+// This makes sure that any request that doesn't match a file
+// still gets sent your index.html. This is robust.
+app.get('*', (req, res) => {
+  const indexPath = path.resolve(staticFilesPath, 'index.html');
+  console.log(`Attempting to send index.html from: ${indexPath}`);
+  res.sendFile(indexPath, (err) => {
+    if (err) {
+      // If there's an error sending the file, log it.
+      console.error('Error sending index.html:', err);
+      res.status(500).send('Error serving the page.');
+    }
+  });
 });
 
-
-// Add any other server-side routes or API endpoints for Stripe/Gemini below this line.
-// For example:
-// app.post('/api/stripe-payment', (req, res) => {
-//   // Your Stripe payment logic would go here
-// });
-
-
-// This starts the server and makes it listen for incoming requests on the defined port.
+// --- Step 5: Start the server ---
 app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
