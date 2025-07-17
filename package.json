@@ -4,9 +4,8 @@
   "description": "A Node.js and Express web server to host the Project Jarvis application and Stripe integration.",
   "main": "server.js",
   "scripts": {
-    "build": "postcss src/input.css -o public/output.css",
-    "build-css": "postcss src/styles.css -o docs/tailwind.css",
-    "watch-css": "postcss src/styles.css -o docs/tailwind.css --watch",
+    "build": "tailwindcss -i ./src/input.css -o ./public/output.css",
+    "watch": "tailwindcss -i ./src/input.css -o ./public/output.css --watch",
     "start": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
