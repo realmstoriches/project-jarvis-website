@@ -538,35 +538,8 @@ stripe-pricing-table {
     }
 }
 
-/* ==========================================================================
-   Responsive Overrides - (Combined from base.css)
-   ========================================================================== */
-
-/* This is your existing responsive block for smaller screens */
-@media (max-width: 767px) {
-    h1 { font-size: 2rem; }
-    h2 { font-size: 1.5rem; }
-    section { padding: 40px 0; }
-    .header-container {
-        flex-direction: column;
-        gap: 15px;
-    }
-    .main-navigation ul {
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 10px 15px;
-    }
-    #our-services .col-md-3,
-    #tools .col-md-3,
-    #courses .col-md-4,
-    .col-md-4 { 
-        flex: 0 0 100%;
-        max-width: 100%;
-    }
-}
-
 /* 
-   ADD THIS NEW BLOCK - This is the missing piece for the grid system on larger screens.
+   This is the grid system for larger screens.
    It targets screens 768px and wider (the 'md' breakpoint).
 */
 @media (min-width: 768px) {
@@ -583,4 +556,3 @@ stripe-pricing-table {
         max-width: 100%;
     }
 }
-

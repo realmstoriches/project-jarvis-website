@@ -1,4 +1,5 @@
 // Wait for the entire HTML document to be ready before running any scripts.
+// This is a crucial performance best practice.
 document.addEventListener("DOMContentLoaded", function() {
     console.log("script.js loaded");
 
@@ -83,6 +84,9 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     // --- Event Listeners ---
+    // NOTE: The "passive listeners" warning does not apply to 'click' or 'submit' events.
+    // It is for scrolling events like 'touchstart', 'touchmove', or 'wheel', which are not used here.
+    // Therefore, no changes are needed for these listeners.
 
     // 1. Listen for the "Accept Cookies" button click.
     if (acceptCookiesBtn) {
