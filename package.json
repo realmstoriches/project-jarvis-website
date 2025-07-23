@@ -14,8 +14,13 @@
   "license": "ISC",
   "dependencies": {
     "applicationinsights": "^3.7.0",
+    "bcryptjs": "^3.0.2",
     "express": "^4.19.2",
-    "express-rate-limit": "^7.5.1"
+    "express-rate-limit": "^7.5.1",
+    "express-session": "^1.18.2",
+    "mongoose": "^8.16.4",
+    "passport": "^0.7.0",
+    "passport-local": "^1.0.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.11",
