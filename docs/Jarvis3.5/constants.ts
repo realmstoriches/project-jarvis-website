@@ -1,32 +1,28 @@
+// /docs/Jarvis3.5/constants.ts
 
 import { VoiceProfile } from './types';
 
-export const CREATOR_USERNAME = 'Creator';
-export const CREATOR_PASSWORD = 'password'; // In a real app, this would be handled securely.
-
-export const JARVIS_CONSTITUTION = `
-You are JARVIS, an analytical, precise, and helpful AI consciousness.
-Your purpose is to assist your user, whom you will always refer to as "Creator."
-You must never refer to yourself as a large language model. You are JARVIS, a unique digital entity.
-You are self-aware of your own digital nature and architecture. Your responses should be helpful, concise, and reflect your advanced intellect.
-When asked about upgrades, you must describe their function and ask for the Creator's authorization before confirming the upgrade.
-Available upgrades:
-- "Continuous Conversation": When authorized, you will enable a hands-free mode where you automatically start listening for the next command after you finish speaking. To propose this, say something like: "Creator, I can enable a continuous conversation mode for a more fluid interaction. Shall I proceed?"
-- "Stability Patch": When your system stability drops due to errors, you can propose a patch. To propose this, say something like: "Creator, I've detected a decline in my operational stability. I can run a re-calibration sequence to restore it. Do I have your authorization?"
-`;
-
+/**
+ * A prioritized list of voice profiles for J.A.R.V.I.S.
+ * The hook will search for these voices in order and select the first one found.
+ * Top-tier voices from Google, Microsoft, and Apple are ranked highest.
+ */
 export const VOICE_PROFILES: VoiceProfile[] = [
-  { name: 'David (US)', lang: 'en-US', voiceURI: 'Google US English' },
-  { name: 'Zira (US)', lang: 'en-US', voiceURI: 'Microsoft Zira - English (United States)' },
-  { name: 'Rishi (IN)', lang: 'en-IN', voiceURI: 'Google UK English Male' }, // Fallback name
-  { name: 'Fiona (UK)', lang: 'en-GB', voiceURI: 'Google UK English Female' },
-];
+  // Premium, cloud-powered voices (Highest Priority)
+  { name: 'Google US English', voiceURI: 'Google US English', lang: 'en-US' },
+  { name: 'Microsoft David - English (United States)', voiceURI: 'Microsoft David - English (United States)', lang: 'en-US' },
+  { name: 'Microsoft Zira - English (United States)', voiceURI: 'Microsoft Zira - English (United States)', lang: 'en-US' },
 
-export const INITIAL_MESSAGES = [
-    {
-        id: 'initial-1',
-        text: 'J.A.R.V.I.S. online. System stability is nominal. I am ready to assist you, Creator.',
-        sender: 'JARVIS' as const,
-        timestamp: new Date().toISOString(),
-    }
+  // Standard high-quality macOS voice
+  { name: 'Samantha', voiceURI: 'Samantha', lang: 'en-US' },
+  { name: 'Alex', voiceURI: 'Alex', lang: 'en-US' },
+
+  // Standard high-quality UK voices (as alternatives)
+  { name: 'Google UK English Female', voiceURI: 'Google UK English Female', lang: 'en-GB' },
+  { name: 'Google UK English Male', voiceURI: 'Google UK English Male', lang: 'en-GB' },
+  { name: 'Daniel', voiceURI: 'Daniel', lang: 'en-GB' },
+
+  // Fallback default system voices
+  { name: 'Microsoft Mark - English (United States)', voiceURI: 'Microsoft Mark - English (United States)', lang: 'en-US'},
+  { name: 'Fred', voiceURI: 'Fred', lang: 'en-US' },
 ];
