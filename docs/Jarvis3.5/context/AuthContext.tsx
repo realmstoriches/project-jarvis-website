@@ -19,10 +19,13 @@ interface AuthContextType {
     logout: () => Promise<void>;
 }
 
-// 1. Create the context with a default value of null
+// --- NEW ---
+// This helper points to your backend URL. It will use the correct URL for
+// development (localhost) or production (your Render URL) automatically.
+const API_URL = process.env.REACT_APP_API_URL;
+
 const AuthContext = createContext<AuthContextType | null>(null);
 
-// 2. Create the Provider component
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -31,7 +34,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     useEffect(() => {
         const checkAuthStatus = async () => {
             try {
-                const response = await fetch('/api/auth/status');
+                // --- INTEGRATED CHANGE ---
+                // We now use the full, absolute URL to contact the backend.
+                // 'credentials: "include"' is CRITICAL for sending the session cookie across domains.
+                const response = await fetch(`${API_URL}/api/auth/status`, {
+                    credentials: 'include',
+                });
+
                 if (response.ok) {
                     const data = await response.json();
                     if (data.isAuthenticated) {
@@ -55,7 +64,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const logout = async () => {
         try {
-            await fetch('/api/auth/logout', { method: 'POST' });
+            // --- INTEGRATED CHANGE ---
+            // The logout endpoint also needs the full URL and credentials.
+            await fetch(`${API_URL}/api/auth/logout`, {
+                method: 'POST',
+                credentials: 'include',
+            });
         } catch (error) {
             console.error('Logout failed:', error);
         } finally {
@@ -79,7 +93,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     );
 };
 
-// 3. Create a custom hook for easy consumption of the context
 export const useAuth = (): AuthContextType => {
     const context = useContext(AuthContext);
     if (!context) {

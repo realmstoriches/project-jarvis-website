@@ -1,24 +1,26 @@
-// server.js (Production Ready - Final Version)
+// server.js (Production Ready - Final Version with CORS)
 
 // --- Core Node.js Modules ---
 const path = require('path');
 
 // --- Third-Party Packages ---
-require('dotenv').config(); // Load environment variables first
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const session = require('express-session');
 const passport = require('passport');
-const MongoStore = require('connect-mongo'); // For persistent sessions
-const helmet = require('helmet'); // For security headers
-const morgan = require('morgan'); // For request logging
-const mongoSanitize = require('express-mongo-sanitize'); // Security: NoSQL injection
-const rateLimit = require('express-rate-limit'); // Security: Brute-force attacks
+const MongoStore = require('connect-mongo');
+const helmet = require('helmet');
+const morgan = require('morgan');
+const mongoSanitize = require('express-mongo-sanitize');
+const rateLimit = require('express-rate-limit');
+const cors = require('cors'); // --- ADD THIS LINE ---
 
 // --- Local Application Modules ---
 const passportConfig = require('./docs/src/api/config/passport-config');
 const userRoutes = require('./docs/src/api/routes/userRoutes');
 const authRoutes = require('./docs/src/api/routes/authRoutes');
+const stripeRoutes = require('./docs/src/api/routes/stripeRoutes');
 
 // --- INITIALIZATION ---
 const app = express();
@@ -30,27 +32,36 @@ mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('MongoDB connected successfully.'))
     .catch(err => {
         console.error('CRITICAL: MongoDB connection error:', err);
-        process.exit(1); // Exit process with failure
+        process.exit(1);
     });
 
 // --- CORE MIDDLEWARE ---
 
-// 1. Security Headers with Helmet
+// Sets important security headers
 app.use(helmet());
 
-// 2. Request Logging with Morgan
+// Logging for HTTP requests
 app.use(isProduction ? morgan('combined') : morgan('dev'));
 
-// 3. Body Parsers
+// --- CORS CONFIGURATION (CRUCIAL FOR PRODUCTION) ---
+// This must come BEFORE your routes are defined.
+const corsOptions = {
+    // This allows your specific frontend domain to make requests to your backend.
+    origin: process.env.CLIENT_URL,
+    // This is essential for sessions to work, as it allows cookies to be sent.
+    credentials: true, 
+};
+app.use(cors(corsOptions));
+
+
+// Body Parsers & Data Sanitization
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true }));
-
-// 4. Data Sanitization against NoSQL Injection
 app.use(mongoSanitize());
 
-// 5. Rate Limiting for Auth Routes
+// Rate Limiting for Auth Routes
 const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
+    windowMs: 15 * 60 * 1000,
     max: 20,
     message: 'Too many requests from this IP, please try again after 15 minutes.',
     standardHeaders: true,
@@ -59,8 +70,7 @@ const authLimiter = rateLimit({
 app.use('/api/auth', authLimiter);
 
 // --- SESSION & AUTHENTICATION MIDDLEWARE ---
-
-// 6. Session Management with Persistent Storage
+// This MUST come after CORS configuration to work correctly.
 app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
@@ -74,11 +84,17 @@ app.use(session({
         maxAge: parseInt(process.env.SESSION_MAX_AGE, 10),
         secure: isProduction,
         httpOnly: true,
-        sameSite: 'lax'
+        // sameSite must be 'none' for cross-domain cookies, and 'secure' must be true.
+        // We also add a proxy setting for Render.com
+        sameSite: isProduction ? 'none' : 'lax',
     }
 }));
+// Trust the first proxy for Render's environment
+if (isProduction) {
+    app.set('trust proxy', 1);
+}
 
-// 7. Passport Initialization
+
 app.use(passport.initialize());
 app.use(passport.session());
 passportConfig(passport);
@@ -86,6 +102,7 @@ passportConfig(passport);
 // --- API ROUTES ---
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/stripe', stripeRoutes);
 
 // --- SERVE STATIC FRONTEND ---
 const staticFilesPath = path.resolve(__dirname, 'docs');
