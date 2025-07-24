@@ -1,4 +1,4 @@
-// server.js (Production Ready - Final Version with Full CSP)
+// server.js (Final Production Version with Comprehensive CSP)
 
 // --- Core Node.js Modules ---
 const path = require('path');
@@ -37,36 +37,52 @@ mongoose.connect(process.env.MONGO_URI)
 
 // --- CORE MIDDLEWARE ---
 
-// --- HELMET & CONTENT SECURITY POLICY (CSP) CONFIGURATION ---
-// This replaces the simple app.use(helmet()) to allow necessary external resources.
+// --- COMPREHENSIVE HELMET & CSP CONFIGURATION ---
 app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
+        // Sets the default policy for fetching resources to only allow your own domain.
         defaultSrc: ["'self'"],
-        // Allow scripts from your own domain, Google, and Stripe.
-        // The 'sha256-...' hash is for your specific inline Google Analytics script.
+        
+        // Defines allowed sources for scripts.
         scriptSrc: [
-          "'self'",
-          "https://www.googletagmanager.com",
-          "https://js.stripe.com",
-          "'sha256-BhiNEcto1yViO8e5aYDwb+4n0cLxYW+eXbmqeQI5eMo='", // Hash for your inline GA script
+          "'self'",                         // Your own domain
+          "https://www.googletagmanager.com", // For Google Analytics
+          "https://js.stripe.com",            // For Stripe.js
+          "https://cdn.tailwindcss.com",    // As seen in your errors
+          "'unsafe-inline'",                  // Allows inline <script> tags. Necessary for GA and other snippets.
         ],
-        // Allow styles from your own domain and trusted CDNs. 'unsafe-inline' is often needed for libraries like Bootstrap.
+
+        // Defines allowed sources for styles.
         styleSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://stackpath.bootstrapcdn.com"],
-        // Allow images from your own domain and data sources (for base64 images).
+        
+        // Defines allowed sources for images.
         imgSrc: ["'self'", "data:"],
-        // Allow API calls to your own domain and the Google Generative AI service.
-        connectSrc: ["'self'", "https://generativelanguage.googleapis.com"],
-        // Allow fonts from trusted CDNs.
+
+        // Defines allowed servers to connect to (for fetch/XHR/API calls).
+        connectSrc: [
+          "'self'",                         // Your own domain
+          "https://generativelanguage.googleapis.com", // For Google Gemini API
+          "https://www.google-analytics.com", // For Google Analytics to send data
+        ],
+
+        // Defines allowed sources for fonts.
         fontSrc: ["'self'", "https://cdnjs.cloudflare.com"],
-        // Allow your site to be embedded in an iframe on its own origin (if needed).
-        frameSrc: ["'self'"],
+
+        // Defines which domains can embed this page in an iframe.
+        frameSrc: [
+          "'self'",                         // Your own domain
+          "https://js.stripe.com",            // Allows Stripe's payment verification frames
+        ],
+        
+        // This is the fix for the "inline event handler" errors.
+        // It allows attributes like 'onclick'. This is needed for your current HTML.
+        scriptSrcAttr: ["'unsafe-inline'"],
       },
     },
   })
 );
-
 
 // Logging for HTTP requests
 app.use(isProduction ? morgan('combined') : morgan('dev'));
@@ -77,7 +93,6 @@ const corsOptions = {
     credentials: true,
 };
 app.use(cors(corsOptions));
-
 
 // Body Parsers & Data Sanitization
 app.use(express.json({ limit: '10kb' }));
