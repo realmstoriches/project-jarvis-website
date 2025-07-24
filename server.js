@@ -1,4 +1,4 @@
-// server.js (Production Ready - Final Version with CORS)
+// server.js (Production Ready - Final Version with Full CSP)
 
 // --- Core Node.js Modules ---
 const path = require('path');
@@ -14,7 +14,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const mongoSanitize = require('express-mongo-sanitize');
 const rateLimit = require('express-rate-limit');
-const cors = require('cors'); // --- ADD THIS LINE ---
+const cors = require('cors');
 
 // --- Local Application Modules ---
 const passportConfig = require('./docs/src/api/config/passport-config');
@@ -37,19 +37,44 @@ mongoose.connect(process.env.MONGO_URI)
 
 // --- CORE MIDDLEWARE ---
 
-// Sets important security headers
-app.use(helmet());
+// --- HELMET & CONTENT SECURITY POLICY (CSP) CONFIGURATION ---
+// This replaces the simple app.use(helmet()) to allow necessary external resources.
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        // Allow scripts from your own domain, Google, and Stripe.
+        // The 'sha256-...' hash is for your specific inline Google Analytics script.
+        scriptSrc: [
+          "'self'",
+          "https://www.googletagmanager.com",
+          "https://js.stripe.com",
+          "'sha256-BhiNEcto1yViO8e5aYDwb+4n0cLxYW+eXbmqeQI5eMo='", // Hash for your inline GA script
+        ],
+        // Allow styles from your own domain and trusted CDNs. 'unsafe-inline' is often needed for libraries like Bootstrap.
+        styleSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://stackpath.bootstrapcdn.com"],
+        // Allow images from your own domain and data sources (for base64 images).
+        imgSrc: ["'self'", "data:"],
+        // Allow API calls to your own domain and the Google Generative AI service.
+        connectSrc: ["'self'", "https://generativelanguage.googleapis.com"],
+        // Allow fonts from trusted CDNs.
+        fontSrc: ["'self'", "https://cdnjs.cloudflare.com"],
+        // Allow your site to be embedded in an iframe on its own origin (if needed).
+        frameSrc: ["'self'"],
+      },
+    },
+  })
+);
+
 
 // Logging for HTTP requests
 app.use(isProduction ? morgan('combined') : morgan('dev'));
 
-// --- CORS CONFIGURATION (CRUCIAL FOR PRODUCTION) ---
-// This must come BEFORE your routes are defined.
+// CORS CONFIGURATION
 const corsOptions = {
-    // This allows your specific frontend domain to make requests to your backend.
     origin: process.env.CLIENT_URL,
-    // This is essential for sessions to work, as it allows cookies to be sent.
-    credentials: true, 
+    credentials: true,
 };
 app.use(cors(corsOptions));
 
@@ -69,8 +94,7 @@ const authLimiter = rateLimit({
 });
 app.use('/api/auth', authLimiter);
 
-// --- SESSION & AUTHENTICATION MIDDLEWARE ---
-// This MUST come after CORS configuration to work correctly.
+// SESSION & AUTHENTICATION MIDDLEWARE
 app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
@@ -84,16 +108,12 @@ app.use(session({
         maxAge: parseInt(process.env.SESSION_MAX_AGE, 10),
         secure: isProduction,
         httpOnly: true,
-        // sameSite must be 'none' for cross-domain cookies, and 'secure' must be true.
-        // We also add a proxy setting for Render.com
         sameSite: isProduction ? 'none' : 'lax',
     }
 }));
-// Trust the first proxy for Render's environment
 if (isProduction) {
     app.set('trust proxy', 1);
 }
-
 
 app.use(passport.initialize());
 app.use(passport.session());
