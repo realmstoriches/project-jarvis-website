@@ -1,44 +1,115 @@
-// server.js
+// server.js (Production Ready - Final Version)
 
-const express = require('express');
+// --- Core Node.js Modules ---
 const path = require('path');
 
+// --- Third-Party Packages ---
+require('dotenv').config(); // Load environment variables first
+const express = require('express');
+const mongoose = require('mongoose');
+const session = require('express-session');
+const passport = require('passport');
+const MongoStore = require('connect-mongo'); // For persistent sessions
+const helmet = require('helmet'); // For security headers
+const morgan = require('morgan'); // For request logging
+const mongoSanitize = require('express-mongo-sanitize'); // Security: NoSQL injection
+const rateLimit = require('express-rate-limit'); // Security: Brute-force attacks
+
+// --- Local Application Modules ---
+const passportConfig = require('./docs/src/api/config/passport-config');
+const userRoutes = require('./docs/src/api/routes/userRoutes');
+const authRoutes = require('./docs/src/api/routes/authRoutes');
+
+// --- INITIALIZATION ---
 const app = express();
 const PORT = process.env.PORT || 4242;
+const isProduction = process.env.NODE_ENV === 'production';
 
-// --- Step 1: Import API routes ---
-const userRoutes = require('./docs/src/api/routes/userRoutes');
+// --- DATABASE CONNECTION ---
+mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log('MongoDB connected successfully.'))
+    .catch(err => {
+        console.error('CRITICAL: MongoDB connection error:', err);
+        process.exit(1); // Exit process with failure
+    });
 
-// --- Step 2: Add middleware ---
-// This middleware is for parsing JSON in the body of requests (e.g., for POST requests)
-app.use(express.json());
+// --- CORE MIDDLEWARE ---
 
-// --- Step 3: Use the API routes ---
-// All routes defined in userRoutes will be prefixed with /api
-app.use('/api', userRoutes);
+// 1. Security Headers with Helmet
+app.use(helmet());
 
-// --- Step 4: Define the absolute path to your static files ---
+// 2. Request Logging with Morgan
+app.use(isProduction ? morgan('combined') : morgan('dev'));
+
+// 3. Body Parsers
+app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: true }));
+
+// 4. Data Sanitization against NoSQL Injection
+app.use(mongoSanitize());
+
+// 5. Rate Limiting for Auth Routes
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 20,
+    message: 'Too many requests from this IP, please try again after 15 minutes.',
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+app.use('/api/auth', authLimiter);
+
+// --- SESSION & AUTHENTICATION MIDDLEWARE ---
+
+// 6. Session Management with Persistent Storage
+app.use(session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({
+        mongoUrl: process.env.MONGO_URI,
+        collectionName: 'sessions',
+        ttl: parseInt(process.env.SESSION_MAX_AGE, 10) / 1000
+    }),
+    cookie: {
+        maxAge: parseInt(process.env.SESSION_MAX_AGE, 10),
+        secure: isProduction,
+        httpOnly: true,
+        sameSite: 'lax'
+    }
+}));
+
+// 7. Passport Initialization
+app.use(passport.initialize());
+app.use(passport.session());
+passportConfig(passport);
+
+// --- API ROUTES ---
+app.use('/api/users', userRoutes);
+app.use('/api/auth', authRoutes);
+
+// --- SERVE STATIC FRONTEND ---
 const staticFilesPath = path.resolve(__dirname, 'docs');
-
-// --- Step 5: Log the path to make sure it's correct ---
+app.use(express.static(staticFilesPath));
 console.log(`Serving static files from: ${staticFilesPath}`);
 
-// --- Step 6: Serve the static files ---
-// This tells Express to serve all files from the 'docs' folder.
-app.use(express.static(staticFilesPath));
-
-// --- Step 7: A "catch-all" route for Single Page Applications ---
-// This MUST come AFTER your API routes.
+// SPA "Catch-all" Route
 app.get('*', (req, res) => {
-  const indexPath = path.resolve(staticFilesPath, 'index.html');
-  console.log(`Attempting to send index.html from: ${indexPath}`);
-  res.sendFile(indexPath, (err) => {
-    if (err) {
-      console.error('Error sending index.html:', err);
-      res.status(500).send('Error serving the page.');
-    }
-  });
+    res.sendFile(path.resolve(staticFilesPath, 'index.html'), (err) => {
+        if (err) {
+            console.error('Error sending index.html:', err);
+            res.status(500).send('Error serving the page.');
+        }
+    });
 });
 
-// --- Step 8: Start the server ---
-app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
+// --- GLOBAL ERROR HANDLER ---
+app.use((err, req, res, next) => {
+    console.error("GLOBAL ERROR HANDLER:", err.stack);
+    res.status(err.status || 500).json({
+        message: err.message || 'An unexpected server error occurred.',
+        stack: isProduction ? '🥞' : err.stack
+    });
+});
+
+// --- START SERVER ---
+app.listen(PORT, () => console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`));

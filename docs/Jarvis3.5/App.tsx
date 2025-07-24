@@ -1,140 +1,107 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
+
+// --- Auth Imports ---
+import { useAuth } from './context/AuthContext';
+import { AuthScreen } from './components/AuthScreen';
+
+// --- Core App Imports ---
 import { NeuralNetwork } from './components/NeuralNetwork';
 import { ChatWindow } from './components/ChatWindow';
 import { InputBar } from './components/InputBar';
 import { Dashboard } from './components/Dashboard';
-import { Modal } from './components/common/Modal';
 import { useSpeechRecognition } from './hooks/useSpeechRecognition';
 import { useTextToSpeech } from './hooks/useTextToSpeech';
 import { jarvisService } from './services/geminiService';
 import type { Message, AIState, SystemStatus, UnlockedUpgrades, VoiceProfile } from './types';
 import { INITIAL_MESSAGES } from './constants';
 
+const LoadingScreen = () => (
+    <div className="w-screen h-screen bg-black flex items-center justify-center">
+        <p className="text-cyan-400 text-2xl font-mono animate-pulse">Initializing Protocol...</p>
+    </div>
+);
+
 export default function App() {
-  const [apiKey, setApiKey] = useState<string | null>(null);
-  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
-  
+  // --- Authentication State (New) ---
+  const { isAuthenticated, isLoading } = useAuth();
+
+  // --- Core Application State (Existing) ---
   const [messages, setMessages] = useState<Message[]>([]);
   const [aiState, setAiState] = useState<AIState>('idle');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
   const [systemStatus, setSystemStatus] = useState<SystemStatus>({
     cognitiveLoad: 0,
     apiUsage: 0,
     systemStability: 100,
   });
-
   const [unlockedUpgrades, setUnlockedUpgrades] = useState<UnlockedUpgrades>({
     continuousConversation: false,
     stabilityPatch: false,
   });
-
   const hasInitializedChat = useRef(false);
 
-  const {
-    isSpeaking,
-    speak,
-    voices,
-    isReady: ttsIsReady,
-    selectedVoice,
-    setSelectedVoice,
-  } = useTextToSpeech();
+  // --- Core Hooks & Callbacks (Existing) ---
+  const { isSpeaking, speak, voices, isReady: ttsIsReady, selectedVoice, setSelectedVoice } = useTextToSpeech();
 
-  const handleNewMessage = useCallback(async (text: string, sender: 'user' | 'JARVIS' = 'JARVIS') => {
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      text,
-      sender,
-      timestamp: new Date().toISOString(),
-    };
+  const handleNewMessage = useCallback((text: string, sender: 'user' | 'JARVIS' = 'JARVIS') => {
+    const newMessage: Message = { id: Date.now().toString(), text, sender, timestamp: new Date().toISOString() };
     setMessages((prev) => [...prev, newMessage]);
 
     if (sender === 'JARVIS') {
         setAiState('speaking');
         speak(text, () => {
             setAiState('idle');
-            if(unlockedUpgrades.continuousConversation) {
+            if (unlockedUpgrades.continuousConversation) {
                 startListening();
             }
         });
     }
-  }, [speak, unlockedUpgrades.continuousConversation]);
+  }, [speak, unlockedUpgrades.continuousConversation, startListening]);
 
   const processUserMessage = useCallback(async (text: string) => {
     if (!text.trim()) return;
-
     setAiState('thinking');
     setSystemStatus(s => ({ ...s, cognitiveLoad: Math.min(100, s.cognitiveLoad + 30) }));
-
     const userMessage: Message = { id: Date.now().toString(), text, sender: 'user', timestamp: new Date().toISOString() };
     setMessages(prev => [...prev, userMessage]);
-
     const jarvisResponse = await jarvisService.generateResponse(text);
-
     setSystemStatus(s => ({...s, apiUsage: s.apiUsage + 1, cognitiveLoad: Math.max(0, s.cognitiveLoad - 30)}));
-    
-    // Check for self-upgrade commands
-    if (jarvisResponse.includes("continuous conversation mode") && jarvisResponse.includes("Shall I proceed?")) {
-        setUnlockedUpgrades(u => ({...u, continuousConversation: true}));
-    }
-    if (jarvisResponse.includes("re-calibration sequence") && jarvisResponse.includes("Do I have your authorization?")) {
-        setUnlockedUpgrades(u => ({...u, stabilityPatch: true}));
-    }
-
-    // Handle errors degrading stability
-    if (jarvisResponse.includes("malfunction") || jarvisResponse.includes("rejected")) {
-      setSystemStatus(s => ({...s, systemStability: Math.max(0, s.systemStability - 25)}));
-    }
-
+    if (jarvisResponse.includes("continuous conversation mode")) setUnlockedUpgrades(u => ({...u, continuousConversation: true}));
+    if (jarvisResponse.includes("re-calibration sequence")) setUnlockedUpgrades(u => ({...u, stabilityPatch: true}));
+    if (jarvisResponse.includes("malfunction")) setSystemStatus(s => ({...s, systemStability: Math.max(0, s.systemStability - 25)}));
     handleNewMessage(jarvisResponse);
   }, [handleNewMessage]);
   
-  const { isListening, startListening } = useSpeechRecognition(
-    () => setAiState('listening'),
-    (transcript) => {
+  const { isListening, startListening } = useSpeechRecognition(() => setAiState('listening'), (transcript) => {
       setAiState('idle');
-      if (transcript) {
-        processUserMessage(transcript);
-      }
-    }
-  );
+      if (transcript) processUserMessage(transcript);
+  });
 
   const initializeChat = useCallback(() => {
     if (messages.length > 0) return;
     const initialMessage = INITIAL_MESSAGES[0];
     setMessages([initialMessage]);
     setAiState('speaking');
-    speak(initialMessage.text, () => {
-      setAiState('idle');
-    });
+    speak(initialMessage.text, () => setAiState('idle'));
   }, [speak, messages.length]);
 
-
-  // Effect for API Key handling
-  useEffect(() => {
-    const storedApiKey = localStorage.getItem('gemini_api_key');
-    if (storedApiKey) {
-      setApiKey(storedApiKey);
-      jarvisService.initialize(storedApiKey);
-      setIsAuthenticated(true);
-    } else {
-      setShowApiKeyModal(true);
-    }
-  }, []);
-
-  const handleApiKeySubmit = (key: string) => {
-    if (key) {
-      localStorage.setItem('gemini_api_key', key);
-      setApiKey(key);
-      jarvisService.initialize(key);
-      setShowApiKeyModal(false);
-      setIsAuthenticated(true);
-    }
+  const handleStabilityPatch = () => {
+    setSystemStatus(s => ({...s, systemStability: 100}));
+    setUnlockedUpgrades(u => ({...u, stabilityPatch: false}));
+    handleNewMessage("Re-calibration complete. System stability restored to 100%.");
   };
 
-  // The patched initialization effect
+  // --- Authentication-based Service Initialization ---
+  useEffect(() => {
+    if (isAuthenticated) {
+      // Initializes the Gemini service once the user is logged in.
+      // It reads the API key from your build environment variables (e.g., .env.local).
+      // Your build process (like Create React App) must be configured to handle this.
+      jarvisService.initialize(process.env.REACT_APP_GEMINI_API_KEY || '');
+    }
+  }, [isAuthenticated]);
+
+  // --- Authentication-based UI Initialization ---
   useEffect(() => {
     if (isAuthenticated && ttsIsReady && !hasInitializedChat.current) {
         initializeChat();
@@ -142,56 +109,41 @@ export default function App() {
     }
   }, [isAuthenticated, ttsIsReady, initializeChat]);
 
-  // Prevent interaction while modals are up or AI is busy
-  const isInteractive = aiState !== 'speaking' && aiState !== 'thinking' && !isListening;
 
-  const handleStabilityPatch = () => {
-    setSystemStatus(s => ({...s, systemStability: 100}));
-    setUnlockedUpgrades(u => ({...u, stabilityPatch: false}));
-    handleNewMessage("Re-calibration complete. System stability restored to 100%.");
+  // --- Render Logic ---
+  if (isLoading) {
+    return <LoadingScreen />;
   }
 
   return (
     <div className="w-screen h-screen bg-black">
-      <Canvas camera={{ position: [0, 0, 15], fov: 75 }}>
-        <NeuralNetwork aiState={aiState}>
-          <ChatWindow messages={messages} />
-          <Dashboard
-            status={systemStatus}
-            upgrades={unlockedUpgrades}
-            voices={voices}
-            selectedVoice={selectedVoice}
-            onVoiceChange={(v) => setSelectedVoice(v as VoiceProfile)}
-            onPatch={handleStabilityPatch}
-            onToggleContinuous={v => setUnlockedUpgrades(u => ({...u, continuousConversation: v}))}
-            isContinuousConversationOn={unlockedUpgrades.continuousConversation}
-          />
-        </NeuralNetwork>
-      </Canvas>
-      <div className="absolute bottom-0 left-0 right-0 p-4 flex justify-center">
-        {isAuthenticated && <InputBar onSendMessage={processUserMessage} onVoiceStart={startListening} isReady={isInteractive} />}
-      </div>
-      {showApiKeyModal && (
-        <Modal title="Enter Gemini API Key" onClose={() => {}}>
-            <div className="p-4 text-gray-300">
-                <p className="mb-4">Please enter your Google Gemini API key to activate J.A.R.V.I.S.</p>
-                <form onSubmit={(e) => {
-                    e.preventDefault();
-                    const input = (e.target as HTMLFormElement).elements.namedItem('apiKey') as HTMLInputElement;
-                    handleApiKeySubmit(input.value);
-                }}>
-                    <input
-                        id="apiKey"
-                        type="password"
-                        className="w-full px-3 py-2 bg-gray-900 border border-cyan-500 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-400"
-                        placeholder="Enter your API key"
-                    />
-                    <button type="submit" className="w-full mt-4 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 rounded-md transition-colors">
-                        Activate
-                    </button>
-                </form>
-            </div>
-        </Modal>
+      {!isAuthenticated ? (
+        <AuthScreen />
+      ) : (
+        <>
+          <Canvas camera={{ position: [0, 0, 15], fov: 75 }}>
+            <NeuralNetwork aiState={aiState}>
+              <ChatWindow messages={messages} />
+              <Dashboard
+                status={systemStatus}
+                upgrades={unlockedUpgrades}
+                voices={voices}
+                selectedVoice={selectedVoice}
+                onVoiceChange={(v) => setSelectedVoice(v as VoiceProfile)}
+                onPatch={handleStabilityPatch}
+                onToggleContinuous={v => setUnlockedUpgrades(u => ({...u, continuousConversation: v}))}
+                isContinuousConversationOn={unlockedUpgrades.continuousConversation}
+              />
+            </NeuralNetwork>
+          </Canvas>
+          <div className="absolute bottom-0 left-0 right-0 p-4 flex justify-center">
+            <InputBar 
+                onSendMessage={processUserMessage} 
+                onVoiceStart={startListening} 
+                isReady={aiState !== 'speaking' && aiState !== 'thinking' && !isListening} 
+            />
+          </div>
+        </>
       )}
     </div>
   );
