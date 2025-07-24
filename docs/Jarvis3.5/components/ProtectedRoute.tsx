@@ -1,15 +1,16 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import { AuthScreen } from './AuthScreen';
+import { Navigate } from 'react-router-dom';
 
-// This component checks for authentication.
-// If the user is logged in, it shows the 'children' (the protected content).
-// If not, it shows the AuthScreen.
+// This component now has only ONE responsibility:
+// If the user is authenticated, it renders the content it's protecting (children).
+// If not, it redirects the user to the /login route.
 export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     const { isAuthenticated } = useAuth();
 
     if (!isAuthenticated) {
-        return <AuthScreen />;
+        // Redirect to the login page. The App router will handle rendering the AuthScreen.
+        return <Navigate to="/login" replace />;
     }
 
     return <>{children}</>;

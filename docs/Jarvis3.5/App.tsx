@@ -1,8 +1,9 @@
-import { Routes, Route } from 'react-router-dom'; // CORRECTED: 'React' removed
+// Import necessary components and hooks
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { JarvisInterface } from './components/JarvisInterface';
-import { PaymentStatus } from './components/PaymentStatus'; // This import will now work
+import { PaymentStatus } from './components/PaymentStatus';
 import { AuthScreen } from './components/AuthScreen';
 
 const LoadingScreen = () => (
@@ -12,9 +13,8 @@ const LoadingScreen = () => (
 );
 
 export default function App() {
-    const { isLoading } = useAuth();
+    const { isLoading, isAuthenticated } = useAuth();
 
-    // Show a loading screen while the authentication status is being checked on initial load.
     if (isLoading) {
         return <LoadingScreen />;
     }
@@ -22,23 +22,26 @@ export default function App() {
     return (
         <Routes>
             {/* 
-              The AuthScreen is now the designated "login" page. The ProtectedRoute component
-              will handle showing this screen if a user is not authenticated.
+              Public Route: /login
+              - If the user is NOT authenticated, this route renders the AuthScreen.
+              - If the user IS authenticated, we redirect them away from the login page
+                to the main application dashboard to avoid confusion.
             */}
-            <Route path="/login" element={<AuthScreen />} />
+            <Route 
+                path="/login" 
+                element={
+                    !isAuthenticated ? <AuthScreen /> : <Navigate to="/dashboard" />
+                } 
+            />
 
             {/* 
-              These are the main application routes. The <ProtectedRoute> wrapper will
-              check for an active session. If the user is not authenticated, it will render
-              the <AuthScreen> instead of the protected content.
+              Protected Routes:
+              These routes are wrapped by ProtectedRoute. If the user is not authenticated,
+              ProtectedRoute will automatically redirect them to the "/login" route above.
             */}
             <Route
                 path="/"
-                element={
-                    <ProtectedRoute>
-                        <JarvisInterface />
-                    </ProtectedRoute>
-                }
+                element={<Navigate to="/dashboard" />} // Redirect root path to dashboard
             />
             <Route
                 path="/dashboard"
@@ -48,11 +51,6 @@ export default function App() {
                     </ProtectedRoute>
                 }
             />
-
-            {/* 
-              These routes handle the redirects from Stripe after a payment attempt.
-              They are also protected to ensure they are only accessed within an authenticated session.
-            */}
             <Route
                 path="/payment-success"
                 element={
@@ -69,6 +67,9 @@ export default function App() {
                     </ProtectedRoute>
                 }
             />
+
+            {/* A catch-all route to handle any other path */}
+            <Route path="*" element={<Navigate to="/dashboard" />} />
         </Routes>
     );
 }
