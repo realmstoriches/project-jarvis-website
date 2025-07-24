@@ -1,9 +1,8 @@
-import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom'; // CORRECTED: 'React' removed
 import { useAuth } from './context/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { JarvisInterface } from './components/JarvisInterface';
-import { PaymentStatus } from './components/PaymentStatus';
+import { PaymentStatus } from './components/PaymentStatus'; // This import will now work
 import { AuthScreen } from './components/AuthScreen';
 
 const LoadingScreen = () => (

@@ -1,6 +1,4 @@
-// /docs/Jarvis3.5/constants.ts
-
-import { VoiceProfile } from './types';
+import { VoiceProfile, Message } from './types'; // CORRECTED: Add Message to the import
 
 /**
  * A prioritized list of voice profiles for J.A.R.V.I.S.
@@ -25,4 +23,18 @@ export const VOICE_PROFILES: VoiceProfile[] = [
   // Fallback default system voices
   { name: 'Microsoft Mark - English (United States)', voiceURI: 'Microsoft Mark - English (United States)', lang: 'en-US'},
   { name: 'Fred', voiceURI: 'Fred', lang: 'en-US' },
+];
+
+
+// --- NEWLY ADDED CONSTANT ---
+/**
+ * The initial message J.A.R.V.I.S. displays when the application loads for the first time.
+ */
+export const INITIAL_MESSAGES: Message[] = [
+    {
+        id: 'initial-message-01',
+        sender: 'JARVIS',
+        text: 'J.A.R.V.I.S. online. All systems nominal. How may I assist you?',
+        timestamp: new Date().toISOString(), // A dynamic timestamp is fine here
+    }
 ];

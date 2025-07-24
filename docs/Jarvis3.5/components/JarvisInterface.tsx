@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react'; // CORRECTED: 'React' removed
 import { Canvas } from '@react-three/fiber';
 import { useAuth } from '../context/AuthContext';
 import { NeuralNetwork } from './NeuralNetwork';
@@ -9,7 +9,7 @@ import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { useTextToSpeech } from '../hooks/useTextToSpeech';
 import { jarvisService } from '../services/geminiService';
 import type { Message, AIState, SystemStatus, UnlockedUpgrades, VoiceProfile } from '../types';
-import { INITIAL_MESSAGES } from '../constants';
+import { INITIAL_MESSAGES } from '../constants'; // This will now work after your fix
 
 export const JarvisInterface = () => {
     const { isAuthenticated } = useAuth();
@@ -25,7 +25,17 @@ export const JarvisInterface = () => {
         stabilityPatch: false,
     });
     const hasInitializedChat = useRef(false);
-    const { isSpeaking, speak, voices, isReady: ttsIsReady, selectedVoice, setSelectedVoice } = useTextToSpeech();
+    // CORRECTED: 'isSpeaking' is removed as it's not used
+    const { speak, voices, isReady: ttsIsReady, selectedVoice, setSelectedVoice } = useTextToSpeech();
+
+    // This is defined outside the useCallback hooks so it's stable
+    const { isListening, startListening } = useSpeechRecognition(() => setAiState('listening'), (transcript) => {
+        setAiState('idle');
+        // CORRECTED: Added block braces
+        if (transcript) {
+            processUserMessage(transcript);
+        }
+    });
 
     const handleNewMessage = useCallback((text: string, sender: 'user' | 'JARVIS' = 'JARVIS') => {
         const newMessage: Message = { id: Date.now().toString(), text, sender, timestamp: new Date().toISOString() };
@@ -34,34 +44,43 @@ export const JarvisInterface = () => {
             setAiState('speaking');
             speak(text, () => {
                 setAiState('idle');
+                // CORRECTED: Added block braces
                 if (unlockedUpgrades.continuousConversation) {
                     startListening();
                 }
             });
         }
-    }, [speak, unlockedUpgrades.continuousConversation, startListening]);
+    }, [speak, unlockedUpgrades.continuousConversation, startListening]); // CORRECTED: Added startListening to dependency array
 
     const processUserMessage = useCallback(async (text: string) => {
-        if (!text.trim()) return;
+        // CORRECTED: Added block braces
+        if (!text.trim()) { return; }
+        
         setAiState('thinking');
         setSystemStatus(s => ({ ...s, cognitiveLoad: Math.min(100, s.cognitiveLoad + 30) }));
         const userMessage: Message = { id: Date.now().toString(), text, sender: 'user', timestamp: new Date().toISOString() };
         setMessages(prev => [...prev, userMessage]);
         const jarvisResponse = await jarvisService.generateResponse(text);
         setSystemStatus(s => ({ ...s, apiUsage: s.apiUsage + 1, cognitiveLoad: Math.max(0, s.cognitiveLoad - 30) }));
-        if (jarvisResponse.includes("continuous conversation mode")) setUnlockedUpgrades(u => ({ ...u, continuousConversation: true }));
-        if (jarvisResponse.includes("re-calibration sequence")) setUnlockedUpgrades(u => ({ ...u, stabilityPatch: true }));
-        if (jarvisResponse.includes("malfunction")) setSystemStatus(s => ({ ...s, systemStability: Math.max(0, s.systemStability - 25) }));
+        
+        // CORRECTED: Added block braces
+        if (jarvisResponse.includes("continuous conversation mode")) {
+            setUnlockedUpgrades(u => ({ ...u, continuousConversation: true }));
+        }
+        if (jarvisResponse.includes("re-calibration sequence")) {
+            setUnlockedUpgrades(u => ({ ...u, stabilityPatch: true }));
+        }
+        if (jarvisResponse.includes("malfunction")) {
+            setSystemStatus(s => ({ ...s, systemStability: Math.max(0, s.systemStability - 25) }));
+        }
+        
         handleNewMessage(jarvisResponse);
     }, [handleNewMessage]);
 
-    const { isListening, startListening } = useSpeechRecognition(() => setAiState('listening'), (transcript) => {
-        setAiState('idle');
-        if (transcript) processUserMessage(transcript);
-    });
-
     const initializeChat = useCallback(() => {
-        if (messages.length > 0) return;
+        // CORRECTED: Added block braces
+        if (messages.length > 0) { return; }
+
         const initialMessage = INITIAL_MESSAGES[0];
         setMessages([initialMessage]);
         setAiState('speaking');
