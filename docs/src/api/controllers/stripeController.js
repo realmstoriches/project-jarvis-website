@@ -8,7 +8,7 @@ const User = require('../models/userModel'); // <-- ADD: We need the User model 
 // @access  Private
 exports.createCheckoutSession = async (req, res) => {
     // ... (existing createCheckoutSession function code)
-    const user = req.user;
+    const {user} = req;
     const { priceId } = req.body;
 
     if (!priceId) {
@@ -52,8 +52,8 @@ exports.getSubscriptionPlans = async (req, res) => {
         );
 
         const plans = pricingTable.line_items.data.map(item => {
-            const price = item.price;
-            const product = price.product;
+            const {price} = item;;
+            const {product} = price;
             return {
                 id: price.id,
                 name: product.name,

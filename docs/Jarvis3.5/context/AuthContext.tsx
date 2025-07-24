@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+import { createContext, useState, useContext, useEffect, ReactNode } from 'react'; // <-- CORRECTED: 'React' has been removed
 
 // Define the shape of the user object and the context value
 interface User {
@@ -19,7 +19,6 @@ interface AuthContextType {
     logout: () => Promise<void>;
 }
 
-// --- NEW ---
 // This helper points to your backend URL. It will use the correct URL for
 // development (localhost) or production (your Render URL) automatically.
 const API_URL = process.env.REACT_APP_API_URL;
@@ -34,7 +33,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     useEffect(() => {
         const checkAuthStatus = async () => {
             try {
-                // --- INTEGRATED CHANGE ---
                 // We now use the full, absolute URL to contact the backend.
                 // 'credentials: "include"' is CRITICAL for sending the session cookie across domains.
                 const response = await fetch(`${API_URL}/api/auth/status`, {
@@ -55,7 +53,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             }
         };
         checkAuthStatus();
-    }, []);
+    }, []); // Empty dependency array ensures this runs only once on mount
 
     const login = (userData: User) => {
         setUser(userData);
@@ -64,7 +62,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const logout = async () => {
         try {
-            // --- INTEGRATED CHANGE ---
             // The logout endpoint also needs the full URL and credentials.
             await fetch(`${API_URL}/api/auth/logout`, {
                 method: 'POST',

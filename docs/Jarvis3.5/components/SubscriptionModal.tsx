@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react'; // <-- CORRECTED: 'React' has been removed
 import { useAuth } from '../context/AuthContext';
-import { Modal } from './common/Modal'; // Assuming Modal is in this path
-import { CreditCardIcon, SpinnerIcon } from './Icons'; // Assuming you have a SpinnerIcon
+import { Modal } from './common/Modal';
+import { CreditCardIcon, SpinnerIcon } from './Icons';
 
 // Define the shape of the plan data we expect from the backend
 interface Plan {
@@ -19,12 +19,18 @@ export const SubscriptionModal = ({ onClose }: { onClose: () => void }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
     const [isRedirecting, setIsRedirecting] = useState(false);
+    
+    // This is a new variable to hold the base URL for API calls
+    const API_URL = process.env.REACT_APP_API_URL;
 
     // Fetch the subscription plans from our backend when the modal opens
     useEffect(() => {
         const fetchPlans = async () => {
             try {
-                const response = await fetch('/api/stripe/plans');
+                // Use the full URL and include credentials
+                const response = await fetch(`${API_URL}/api/stripe/plans`, {
+                    credentials: 'include'
+                });
                 if (!response.ok) {
                     const errData = await response.json();
                     throw new Error(errData.message || 'Failed to fetch plans.');
@@ -39,16 +45,18 @@ export const SubscriptionModal = ({ onClose }: { onClose: () => void }) => {
         };
 
         fetchPlans();
-    }, []);
+    }, [API_URL]); // Added API_URL to dependency array
 
     const handleSubscribe = async (priceId: string) => {
         setIsRedirecting(true);
         setError('');
         try {
-            const response = await fetch('/api/stripe/create-checkout-session', {
+            // Use the full URL and include credentials
+            const response = await fetch(`${API_URL}/api/stripe/create-checkout-session`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ priceId }),
+                credentials: 'include'
             });
 
             const data = await response.json();
@@ -101,8 +109,8 @@ export const SubscriptionModal = ({ onClose }: { onClose: () => void }) => {
                                 </div>
                                 <button
                                     onClick={() => handleSubscribe(plan.id)}
-                                    disabled={isRedirecting}
-                                    className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2 px-4 rounded-md transition-colors disabled:bg-gray-500 flex items-center space-x-2"
+                                    disabled={isRedirecting || user?.subscription.tier === plan.name.toLowerCase()}
+                                    className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2 px-4 rounded-md transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed flex items-center space-x-2"
                                 >
                                     {isRedirecting ? <SpinnerIcon className="animate-spin h-5 w-5" /> : <CreditCardIcon />}
                                     <span>{user?.subscription.tier === plan.name.toLowerCase() ? 'Current Plan' : 'Subscribe'}</span>
