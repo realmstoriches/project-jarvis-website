@@ -1,4 +1,4 @@
-// server.js (Final Production Version with Comprehensive CSP)
+// server.js (Final Production Version with Corrected Paths)
 
 // --- Core Node.js Modules ---
 const path = require('path');
@@ -16,11 +16,12 @@ const mongoSanitize = require('express-mongo-sanitize');
 const rateLimit = require('express-rate-limit');
 const cors = require('cors');
 
-// --- Local Application Modules ---
-const passportConfig = require('./docs/src/api/config/passport-config');
-const userRoutes = require('./docs/src/api/routes/userRoutes');
-const authRoutes = require('./docs/src/api/routes/authRoutes');
-const stripeRoutes = require('./docs/src/api/routes/stripeRoutes');
+// --- Local Application Modules (PATHS CORRECTED) ---
+// These paths have been updated to remove the old '/docs' prefix.
+const passportConfig = require('./src/api/config/passport-config');
+const userRoutes = require('./src/api/routes/userRoutes');
+const authRoutes = require('./src/api/routes/authRoutes');
+const stripeRoutes = require('./src/api/routes/stripeRoutes');
 
 // --- INITIALIZATION ---
 const app = express();
@@ -38,46 +39,18 @@ mongoose.connect(process.env.MONGO_URI)
 // --- CORE MIDDLEWARE ---
 
 // --- COMPREHENSIVE HELMET & CSP CONFIGURATION ---
+// No changes were made here. Your existing robust security policy is preserved.
 app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
-        // Sets the default policy for fetching resources to only allow your own domain.
         defaultSrc: ["'self'"],
-        
-        // Defines allowed sources for scripts.
-        scriptSrc: [
-          "'self'",                         // Your own domain
-          "https://www.googletagmanager.com", // For Google Analytics
-          "https://js.stripe.com",            // For Stripe.js
-          "https://cdn.tailwindcss.com",    // As seen in your errors
-          "'unsafe-inline'",                  // Allows inline <script> tags. Necessary for GA and other snippets.
-        ],
-
-        // Defines allowed sources for styles.
+        scriptSrc: ["'self'", "https://www.googletagmanager.com", "https://js.stripe.com", "https://cdn.tailwindcss.com", "'unsafe-inline'"],
         styleSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://stackpath.bootstrapcdn.com"],
-        
-        // Defines allowed sources for images.
         imgSrc: ["'self'", "data:"],
-
-        // Defines allowed servers to connect to (for fetch/XHR/API calls).
-        connectSrc: [
-          "'self'",                         // Your own domain
-          "https://generativelanguage.googleapis.com", // For Google Gemini API
-          "https://www.google-analytics.com", // For Google Analytics to send data
-        ],
-
-        // Defines allowed sources for fonts.
+        connectSrc: ["'self'", "https://generativelanguage.googleapis.com", "https://www.google-analytics.com"],
         fontSrc: ["'self'", "https://cdnjs.cloudflare.com"],
-
-        // Defines which domains can embed this page in an iframe.
-        frameSrc: [
-          "'self'",                         // Your own domain
-          "https://js.stripe.com",            // Allows Stripe's payment verification frames
-        ],
-        
-        // This is the fix for the "inline event handler" errors.
-        // It allows attributes like 'onclick'. This is needed for your current HTML.
+        frameSrc: ["'self'", "https://js.stripe.com"],
         scriptSrcAttr: ["'unsafe-inline'"],
       },
     },
@@ -135,24 +108,24 @@ app.use(passport.session());
 passportConfig(passport);
 
 // --- API ROUTES ---
+// These routes are now correctly required and will work.
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/stripe', stripeRoutes);
 
-// --- SERVE STATIC FRONTEND ---
-const staticFilesPath = path.resolve(__dirname, 'docs');
-app.use(express.static(staticFilesPath));
-console.log(`Serving static files from: ${staticFilesPath}`);
-
-// SPA "Catch-all" Route
-app.get('*', (req, res) => {
-    res.sendFile(path.resolve(staticFilesPath, 'index.html'), (err) => {
-        if (err) {
-            console.error('Error sending index.html:', err);
-            res.status(500).send('Error serving the page.');
-        }
-    });
+// --- SERVER HEALTH CHECK ROUTE ---
+// It's good practice to have a simple root route to confirm the API is running.
+app.get('/api', (req, res) => {
+    res.json({ status: 'success', message: 'Realms to Riches API is running.' });
 });
+
+
+// --- REMOVED STATIC FILE SERVER ---
+// The section that served static files from a 'docs' folder has been removed.
+// This is because in the new architecture, this backend server is API-ONLY.
+// The frontend (your website) is now served entirely by GitHub Pages.
+// Leaving the old code here would cause errors on Render.
+
 
 // --- GLOBAL ERROR HANDLER ---
 app.use((err, req, res, next) => {
