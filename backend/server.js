@@ -1,4 +1,4 @@
-// server.js (Final Production Version with Corrected Paths)
+// server.js (Final Production Version with Corrected Nested Paths)
 
 // --- Core Node.js Modules ---
 const path = require('path');
@@ -16,12 +16,12 @@ const mongoSanitize = require('express-mongo-sanitize');
 const rateLimit = require('express-rate-limit');
 const cors = require('cors');
 
-// --- Local Application Modules (PATHS CORRECTED) ---
-// These paths have been updated to remove the old '/docs' prefix.
-const passportConfig = require('./src/api/config/passport-config');
-const userRoutes = require('./src/api/routes/userRoutes');
-const authRoutes = require('./src/api/routes/authRoutes');
-const stripeRoutes = require('./src/api/routes/stripeRoutes');
+// --- Local Application Modules (PATHS CORRECTED FOR NESTED SRC) ---
+// The paths now correctly point to the second 'src' directory.
+const passportConfig = require('./src/src/api/config/passport-config');
+const userRoutes = require('./src/src/api/routes/userRoutes');
+const authRoutes = require('./src/src/api/routes/authRoutes');
+const stripeRoutes = require('./src/src/api/routes/stripeRoutes');
 
 // --- INITIALIZATION ---
 const app = express();
@@ -38,8 +38,7 @@ mongoose.connect(process.env.MONGO_URI)
 
 // --- CORE MIDDLEWARE ---
 
-// --- COMPREHENSIVE HELMET & CSP CONFIGURATION ---
-// No changes were made here. Your existing robust security policy is preserved.
+// Your existing security policy is preserved.
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -108,24 +107,15 @@ app.use(passport.session());
 passportConfig(passport);
 
 // --- API ROUTES ---
-// These routes are now correctly required and will work.
+// These routes will now be found correctly.
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/stripe', stripeRoutes);
 
 // --- SERVER HEALTH CHECK ROUTE ---
-// It's good practice to have a simple root route to confirm the API is running.
 app.get('/api', (req, res) => {
     res.json({ status: 'success', message: 'Realms to Riches API is running.' });
 });
-
-
-// --- REMOVED STATIC FILE SERVER ---
-// The section that served static files from a 'docs' folder has been removed.
-// This is because in the new architecture, this backend server is API-ONLY.
-// The frontend (your website) is now served entirely by GitHub Pages.
-// Leaving the old code here would cause errors on Render.
-
 
 // --- GLOBAL ERROR HANDLER ---
 app.use((err, req, res, next) => {
