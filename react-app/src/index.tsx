@@ -1,8 +1,8 @@
-// react-app/src/index.tsx - FINAL CORRECTED VERSION
+// react-app/src/index.tsx - FINAL DEFINITIVE VERSION
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom'; // Use BrowserRouter for cleaner URLs
+import { HashRouter } from 'react-router-dom'; // <-- Use HashRouter for iframe compatibility
 import App from './App';
 import { AuthProvider } from './context/AuthContext';
 import './index.css';
@@ -17,10 +17,10 @@ const root = ReactDOM.createRoot(rootElement);
 // The correct wrapping order: Router -> AuthProvider -> App
 root.render(
   <React.StrictMode>
-    <BrowserRouter>
+    <HashRouter> 
       <AuthProvider>
         <App />
       </AuthProvider>
-    </BrowserRouter>
+    </HashRouter>
   </React.StrictMode>
 );

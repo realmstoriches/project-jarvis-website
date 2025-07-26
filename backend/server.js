@@ -1,4 +1,4 @@
-// backend/server.js - FINAL DEFINITIVE VERSION
+// backend/server.js - FINAL VERIFIED VERSION
 
 const path = require('path');
 require('dotenv').config();
@@ -42,7 +42,7 @@ app.use(
           "'unsafe-inline'",
           "https://www.googletagmanager.com",
           "https://js.stripe.com",
-          "https://cdn.tailwindcss.com", // <-- FIX: Allow Tailwind CSS
+          "https://cdn.tailwindcss.com",
         ],
         scriptSrcAttr: ["'unsafe-inline'"],
         styleSrc: [
@@ -54,7 +54,7 @@ app.use(
         connectSrc: [
           "'self'",
           "https://www.google-analytics.com",
-          "https://generativelanguage.googleapis.com", // <-- FIX: Allow Google Gemini API
+          "https://generativelanguage.googleapis.com",
         ],
         imgSrc: ["'self'", "data:"],
         fontSrc: ["'self'", "https://cdnjs.cloudflare.com"],
@@ -107,4 +107,4 @@ app.use((err, req, res, next) => {
 });
 
 // --- Start Server ---
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`));

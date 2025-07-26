@@ -22,7 +22,6 @@
     <meta name="keywords" content="online business, entrepreneur, digital marketing, faceless brand, paid traffic, social media marketing, build online business, customhits, online business strategies, free digital marketing courses, online business tools, shopify offer">
 
     <!-- Stylesheets, Icons, and Essential Scripts -->
-    <!-- Preconnect to external domains to speed up initial connection -->
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://stackpath.bootstrapcdn.com" crossorigin>
     
@@ -145,10 +144,16 @@
                     </div>
                 </div>
                 <div id="jarvis-3.5-app-container" class="ai-app-wrapper">
-                    <!-- ================================================================== -->
-                    <!-- THIS IS THE MODIFIED IFRAME TAG                                    -->
-                    <!-- It now has an ID, no src, and is hidden by default.                -->
-                    <!-- ================================================================== -->
+                    
+                    <!-- =================================== -->
+                    <!-- MERGED: JARVIS BOOT SEQUENCE OVERLAY  -->
+                    <!-- =================================== -->
+                    <div id="jarvis-boot-overlay" style="display: none;">
+                        <div id="boot-text"></div>
+                        <span id="boot-cursor">|</span>
+                    </div>
+
+                    <!-- The fully corrected iframe tag -->
                     <iframe id="jarvis-iframe" title="Jarvis 3.5" class="ai-app-iframe" loading="lazy" width="1170" height="600" style="display: none;" allow="payment"></iframe>
                 </div>
                 <stripe-pricing-table pricing-table-id="prctbl_1RjxM3Dh670NrbobwRyrD7PL" publishable-key="pk_live_51RjiMIDh670NrbobgT9FRsO8f9HGL827p2SQl28YltfQi94VCFuYEDHOSbHvqG9hyzZb1jbdXPtu4NuXFNsxeA1g00U30uYEdE"></stripe-pricing-table>
@@ -160,8 +165,6 @@
             </div>
         </section>
 
-        <!-- The rest of your HTML content remains exactly the same... -->
-        
         <section id="customer-portal" class="section-padding">
             <div class="container">
                 <div class="area text-center">
