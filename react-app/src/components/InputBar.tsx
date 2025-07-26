@@ -1,3 +1,4 @@
+// react-app/src/components/InputBar.tsx - FINAL ACCESSIBLE VERSION
 
 import React, { useState } from 'react';
 import { SendIcon, MicIcon } from './Icons';
@@ -41,6 +42,7 @@ export const InputBar: React.FC<InputBarProps> = ({ onSendMessage, onVoiceStart,
           onClick={handleMicClick}
           disabled={!isReady}
           className="absolute left-3 text-gray-400 hover:text-white disabled:text-gray-600 transition-colors"
+          aria-label="Start voice input" // <-- MERGED ACCESSIBILITY FIX
         >
           <MicIcon />
         </button>
@@ -48,6 +50,7 @@ export const InputBar: React.FC<InputBarProps> = ({ onSendMessage, onVoiceStart,
           type="submit"
           disabled={!isReady || !inputValue.trim()}
           className="absolute right-3 text-gray-400 hover:text-white disabled:text-gray-600 transition-colors"
+          aria-label="Send message" // <-- MERGED ACCESSIBILITY FIX
         >
           <SendIcon />
         </button>
