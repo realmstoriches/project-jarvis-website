@@ -1,9 +1,9 @@
-// backend/server.js - FINAL PRODUCTION VERSION
+// backend/server.js - FINAL VERSION WITH CORRECT CSP
 
 const path = require('path');
 require('dotenv').config();
 const express = require('express');
-const mongoose =require('mongoose');
+const mongoose = require('mongoose');
 const session = require('express-session');
 const passport = require('passport');
 const MongoStore = require('connect-mongo');
@@ -31,8 +31,40 @@ mongoose.connect(process.env.MONGO_URI)
         process.exit(1);
     });
 
-// --- Core Middleware ---
-app.use(helmet());
+// --- CORE MIDDLEWARE ---
+
+// =========================================================================
+// --- NEW, COMPREHENSIVE HELMET & CSP CONFIGURATION ---
+// This replaces the simple app.use(helmet());
+// =========================================================================
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"], // Default policy: only allow from our domain
+        scriptSrc: [
+          "'self'", // Allow scripts from our domain
+          "'unsafe-inline'", // Allow inline <script> tags (for Google Analytics)
+          "https://www.googletagmanager.com", // Allow Google Analytics script
+          "https://js.stripe.com", // Allow Stripe's pricing table script
+        ],
+        styleSrc: [
+          "'self'", // Allow stylesheets from our domain
+          "'unsafe-inline'", // Allow inline styles and the 'onload' CSS trick
+          "https://cdnjs.cloudflare.com", // Allow Font Awesome
+          "https://stackpath.bootstrapcdn.com", // Allow Bootstrap
+        ],
+        connectSrc: [
+          "'self'", // Allow API calls to our own domain
+          "https://www.google-analytics.com", // Allow Google Analytics to send data
+        ],
+        imgSrc: ["'self'", "data:"], // Allow images from our domain and data URIs
+        fontSrc: ["'self'", "https://cdnjs.cloudflare.com"], // Allow fonts from Font Awesome
+      },
+    },
+  })
+);
+
 app.use(isProduction ? morgan('combined') : morgan('dev'));
 app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
 app.use(express.json({ limit: '10kb' }));
@@ -51,41 +83,23 @@ app.use(passport.initialize());
 app.use(passport.session());
 passportConfig(passport);
 
-// =========================================================================
-// --- API ROUTES (MUST BE BEFORE STATIC ROUTES) ---
-// =========================================================================
+// --- API ROUTES ---
 const apiLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
 app.use('/api', apiLimiter);
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/stripe', stripeRoutes);
 
-
-// =========================================================================
 // --- SERVE BUILT FRONTEND STATIC FILES ---
-// =========================================================================
-
-// Define the path to the 'docs' folder, which is in the parent directory.
 const docsPath = path.resolve(__dirname, '..', 'docs');
-console.log(`Serving static files from root: ${docsPath}`);
-
-// Serve all static files from the 'docs' folder (for your main site).
 app.use(express.static(docsPath));
-
-// Also serve the assets for the nested React app correctly.
-// This specifically maps the /jarvis-app/assets URL path to the correct folder on the server.
 const reactAssetsPath = path.resolve(docsPath, 'jarvis-app', 'assets');
-console.log(`Serving React app assets from: ${reactAssetsPath}`);
 app.use('/jarvis-app/assets', express.static(reactAssetsPath));
 
-
 // --- SPA CATCH-ALL ROUTE ---
-// For any request that doesn't match an API route or a static file, send the main index.html.
-// This allows your client-side routers to take over.
 app.get('*', (req, res) => {
     res.sendFile(path.resolve(docsPath, 'index.html'));
 });
-
 
 // --- Global Error Handler ---
 app.use((err, req, res, next) => {
