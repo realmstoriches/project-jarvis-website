@@ -1,4 +1,4 @@
-// backend/server.js - FINAL VERIFIED VERSION
+// backend/server.js - COMPLETE VERBOSE LOGGING VERSION
 
 const path = require('path');
 require('dotenv').config();
@@ -22,6 +22,14 @@ const stripeRoutes = require('./src/src/api/routes/stripeRoutes');
 const app = express();
 const PORT = process.env.PORT || 4242;
 const isProduction = process.env.NODE_ENV === 'production';
+
+// =========================================================================
+// --- GATEKEEPER LOG: Logs EVERY request that hits the server ---
+app.use((req, res, next) => {
+    console.log(`[SERVER] INCOMING REQUEST: ${req.method} ${req.originalUrl}`);
+    next();
+});
+// =========================================================================
 
 // --- Database Connection ---
 mongoose.connect(process.env.MONGO_URI)
@@ -63,7 +71,6 @@ app.use(
     },
   })
 );
-
 app.use(isProduction ? morgan('combined') : morgan('dev'));
 app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
 app.use(express.json({ limit: '10kb' }));
@@ -91,13 +98,24 @@ app.use('/api/stripe', stripeRoutes);
 
 // --- SERVE BUILT FRONTEND STATIC FILES ---
 const docsPath = path.resolve(__dirname, '..', 'docs');
-app.use(express.static(docsPath));
+console.log(`[SERVER] Serving static root from: ${docsPath}`);
+
 const reactAssetsPath = path.resolve(docsPath, 'jarvis-app', 'assets');
+console.log(`[SERVER] Serving React assets from: ${reactAssetsPath}`);
 app.use('/jarvis-app/assets', express.static(reactAssetsPath));
+
+app.use(express.static(docsPath));
 
 // --- SPA CATCH-ALL ROUTE ---
 app.get('*', (req, res) => {
-    res.sendFile(path.resolve(docsPath, 'index.html'));
+    if (req.originalUrl.includes('.') && !req.originalUrl.includes('html')) {
+        console.error(`[SERVER] CRITICAL ERROR: Catch-all is serving index.html for an asset request: ${req.originalUrl}`);
+        // To be safe, we send a 404 for asset-like requests that weren't found by static handlers.
+        res.status(404).send('Asset not found');
+    } else {
+        console.log(`[SERVER] Serving main index.html for SPA route: ${req.originalUrl}`);
+        res.sendFile(path.resolve(docsPath, 'index.html'));
+    }
 });
 
 // --- Global Error Handler ---

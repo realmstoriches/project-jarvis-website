@@ -1,6 +1,6 @@
-// react-app/src/context/AuthContext.tsx - FINAL LINTED VERSION
+// react-app/src/context/AuthContext.tsx - COMPLETE VERBOSE LOGGING VERSION
 
-import { createContext, useState, useContext, useEffect, ReactNode } from 'react'; // <-- CORRECTED: 'React' has been removed
+import { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 
 // Define the shape of the user object and the context value
 interface User {
@@ -29,30 +29,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
+    console.log("[AUTH_CONTEXT] AuthProvider is mounting or re-rendering.");
+
     useEffect(() => {
         const checkAuthStatus = async () => {
+            console.log("[AUTH_CONTEXT] useEffect triggered. Checking auth status...");
             try {
-                // We use a simple relative path. The browser will automatically
-                // send this request to the same domain the website is on (your Render server).
-                const response = await fetch('/api/auth/status', {
-                    credentials: 'include', // This is CRITICAL for sending the session cookie.
+                const apiUrl = '/api/auth/status';
+                console.log(`[AUTH_CONTEXT] Fetching from URL: ${apiUrl}`);
+                const response = await fetch(apiUrl, {
+                    credentials: 'include',
                 });
 
+                console.log(`[AUTH_CONTEXT] Received response with status: ${response.status}`);
+                
                 if (response.ok) {
                     const data = await response.json();
+                    console.log("[AUTH_CONTEXT] Auth status data received:", data);
                     if (data.isAuthenticated) {
                         setUser(data.user);
                         setIsAuthenticated(true);
                     }
+                } else {
+                    const errorText = await response.text();
+                    console.error("[AUTH_CONTEXT] Auth status check failed with non-OK response. Body:", errorText);
                 }
             } catch (error) {
-                console.error('Error checking authentication status:', error);
+                console.error('[AUTH_CONTEXT] An error occurred during fetch:', error);
             } finally {
+                console.log("[AUTH_CONTEXT] Finished auth check. Setting isLoading to false.");
                 setIsLoading(false);
             }
         };
         checkAuthStatus();
-    }, []); // Empty dependency array ensures this runs only once on mount
+    }, []);
 
     const login = (userData: User) => {
         setUser(userData);
@@ -61,7 +71,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const logout = async () => {
         try {
-            // The logout endpoint also uses a simple relative path.
             await fetch('/api/auth/logout', {
                 method: 'POST',
                 credentials: 'include',
@@ -89,10 +98,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     );
 };
 
-// This custom hook makes it easy for components to access the auth context.
 export const useAuth = (): AuthContextType => {
     const context = useContext(AuthContext);
     if (!context) {
+        console.error("CRITICAL REACT ERROR: useAuth was called outside of an AuthProvider's scope!");
         throw new Error('useAuth must be used within an AuthProvider');
     }
     return context;
