@@ -1,4 +1,4 @@
-// backend/server.js - FINAL VERSION WITH CORRECT CSP
+// backend/server.js - FINAL VERSION WITH COMPLETE CSP
 
 const path = require('path');
 require('dotenv').config();
@@ -34,32 +34,38 @@ mongoose.connect(process.env.MONGO_URI)
 // --- CORE MIDDLEWARE ---
 
 // =========================================================================
-// --- NEW, COMPREHENSIVE HELMET & CSP CONFIGURATION ---
-// This replaces the simple app.use(helmet());
+// --- FINAL, COMPREHENSIVE HELMET & CSP CONFIGURATION ---
 // =========================================================================
 app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
-        defaultSrc: ["'self'"], // Default policy: only allow from our domain
+        defaultSrc: ["'self'"],
         scriptSrc: [
-          "'self'", // Allow scripts from our domain
-          "'unsafe-inline'", // Allow inline <script> tags (for Google Analytics)
-          "https://www.googletagmanager.com", // Allow Google Analytics script
-          "https://js.stripe.com", // Allow Stripe's pricing table script
+          "'self'",
+          "'unsafe-inline'", // Allows inline <script> tags for GA
+          "https://www.googletagmanager.com",
+          "https://js.stripe.com",
         ],
+        // --- THIS IS THE FIX for the 'onload' attribute errors ---
+        scriptSrcAttr: ["'unsafe-inline'"],
         styleSrc: [
-          "'self'", // Allow stylesheets from our domain
-          "'unsafe-inline'", // Allow inline styles and the 'onload' CSS trick
-          "https://cdnjs.cloudflare.com", // Allow Font Awesome
-          "https://stackpath.bootstrapcdn.com", // Allow Bootstrap
+          "'self'",
+          "'unsafe-inline'", // Required for some libraries and the onload trick
+          "https://cdnjs.cloudflare.com",
+          "https://stackpath.bootstrapcdn.com",
         ],
         connectSrc: [
-          "'self'", // Allow API calls to our own domain
-          "https://www.google-analytics.com", // Allow Google Analytics to send data
+          "'self'",
+          "https://www.google-analytics.com",
         ],
-        imgSrc: ["'self'", "data:"], // Allow images from our domain and data URIs
-        fontSrc: ["'self'", "https://cdnjs.cloudflare.com"], // Allow fonts from Font Awesome
+        imgSrc: ["'self'", "data:"],
+        fontSrc: ["'self'", "https://cdnjs.cloudflare.com"],
+        // --- THIS IS THE FIX for the Stripe iframe error ---
+        frameSrc: [
+            "'self'",
+            "https://js.stripe.com"
+        ],
       },
     },
   })
