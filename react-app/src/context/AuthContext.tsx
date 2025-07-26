@@ -1,3 +1,5 @@
+// react-app/src/context/AuthContext.tsx - FINAL LINTED VERSION
+
 import { createContext, useState, useContext, useEffect, ReactNode } from 'react'; // <-- CORRECTED: 'React' has been removed
 
 // Define the shape of the user object and the context value
@@ -19,10 +21,7 @@ interface AuthContextType {
     logout: () => Promise<void>;
 }
 
-// This helper points to your backend URL. It will use the correct URL for
-// development (localhost) or production (your Render URL) automatically.
-const API_URL = process.env.REACT_APP_API_URL;
-
+// Create the context
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -33,10 +32,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     useEffect(() => {
         const checkAuthStatus = async () => {
             try {
-                // We now use the full, absolute URL to contact the backend.
-                // 'credentials: "include"' is CRITICAL for sending the session cookie across domains.
-                const response = await fetch(`${API_URL}/api/auth/status`, {
-                    credentials: 'include',
+                // We use a simple relative path. The browser will automatically
+                // send this request to the same domain the website is on (your Render server).
+                const response = await fetch('/api/auth/status', {
+                    credentials: 'include', // This is CRITICAL for sending the session cookie.
                 });
 
                 if (response.ok) {
@@ -62,8 +61,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const logout = async () => {
         try {
-            // The logout endpoint also needs the full URL and credentials.
-            await fetch(`${API_URL}/api/auth/logout`, {
+            // The logout endpoint also uses a simple relative path.
+            await fetch('/api/auth/logout', {
                 method: 'POST',
                 credentials: 'include',
             });
@@ -90,6 +89,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     );
 };
 
+// This custom hook makes it easy for components to access the auth context.
 export const useAuth = (): AuthContextType => {
     const context = useContext(AuthContext);
     if (!context) {
