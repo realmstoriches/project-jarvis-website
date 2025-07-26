@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'; // <-- CORRECTED: 'React' has been removed
-import { useAuth } from '../src/context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import { Modal } from './common/Modal';
 import { CreditCardIcon, SpinnerIcon } from './Icons';
 

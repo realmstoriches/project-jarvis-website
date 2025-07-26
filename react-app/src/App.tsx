@@ -5,6 +5,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { JarvisInterface } from './components/JarvisInterface';
 import { PaymentStatus } from './components/PaymentStatus';
 import { AuthScreen } from './components/AuthScreen';
+import { Dashboard } from './components/Dashboard';
 
 const LoadingScreen = () => (
     <div className="w-screen h-screen bg-black flex items-center justify-center">

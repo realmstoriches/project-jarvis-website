@@ -27,5 +27,9 @@
     "paths": {
       "@/*" :  ["./*"]
     }
-  }
+  },
+
+  // --- THIS IS THE CRITICAL ADDITION ---
+  // This tells TypeScript where your source code and type definitions are.
+  "include": ["src"]
 }

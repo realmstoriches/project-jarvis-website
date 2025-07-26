@@ -1,8 +1,10 @@
+// react-app/src/components/Dashboard.tsx - FINAL CORRECTED VERSION
+
 import React, { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from 'recharts';
-import { SystemStatus, UnlockedUpgrades, VoiceProfile } from '../src/types';
+import { SystemStatus, UnlockedUpgrades, VoiceProfile } from '../types'; // <-- PATH 1 CORRECTED
 import { LoopIcon, ShieldIcon, SubscriptionIcon } from './Icons';
-import { useAuth } from '../src/context/AuthContext';
+import { useAuth } from '../context/AuthContext'; // <-- PATH 2 CORRECTED
 import { SubscriptionModal } from './SubscriptionModal';
 
 interface DashboardProps {
@@ -87,9 +89,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <ChartDataWrapper title="System Upgrades">
               <div className='space-y-2'>
                   {upgrades.continuousConversation && (
-                      // --- ACCESSIBILITY FIX STARTS HERE ---
-                      // The entire element is now a <label>, which implicitly links the text
-                      // and the checkbox, making the whole area clickable and accessible.
                       <label className="flex items-center justify-between bg-gray-800/50 p-2 rounded cursor-pointer">
                           <div className="flex items-center space-x-2">
                             <LoopIcon />
@@ -100,7 +99,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             <div className="w-9 h-5 bg-gray-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-600"></div>
                           </div>
                       </label>
-                      // --- ACCESSIBILITY FIX ENDS HERE ---
                   )}
                   {upgrades.stabilityPatch && (
                       <button onClick={onPatch} className="w-full flex items-center justify-center space-x-2 p-2 rounded bg-yellow-600/50 hover:bg-yellow-500/50 transition-colors">

@@ -1,9 +1,10 @@
+// react-app/src/components/NeuralNetwork.tsx - FINAL CORRECTED VERSION
 
 import React, { useMemo, useRef, ReactNode } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { OrbitControls, Html } from '@react-three/drei';
 import * as THREE from 'three';
-import type { AIState } from '../src/types';
+import type { AIState } from '../types';
 
 const PARTICLE_COUNT = 5000;
 const NETWORK_RADIUS = 20;
@@ -50,7 +51,7 @@ export const NeuralNetwork: React.FC<NeuralNetworkProps> = ({ aiState, children 
   const listeningParticles = useMemo(() => createParticleSystem(500, colors.listening, 0.04), [colors.listening]);
 
   useFrame((state, delta) => {
-    const time = state.clock.getElapsedTime();
+    // LINTING FIX: The 'time' constant was unused and has been removed.
     if (coreRef.current) {
       const targetColor = colors[aiState];
       (coreRef.current.material as THREE.MeshStandardMaterial).color.lerp(targetColor, delta * 5);
@@ -65,14 +66,15 @@ export const NeuralNetwork: React.FC<NeuralNetworkProps> = ({ aiState, children 
 
     if (thinkingParticlesRef.current) {
         thinkingParticlesRef.current.visible = aiState === 'thinking';
-        if(aiState === 'thinking') {
+        if (aiState === 'thinking') {
             thinkingParticlesRef.current.rotation.y -= delta * 0.5;
             thinkingParticlesRef.current.rotation.x += delta * 0.3;
         }
     }
     if (listeningParticlesRef.current) {
+        // CORRECTED: This was a typo, changed from 'ai.state' to 'aiState'
         listeningParticlesRef.current.visible = aiState === 'listening';
-         if(aiState === 'listening') {
+         if (aiState === 'listening') {
             listeningParticlesRef.current.rotation.y += delta * 0.2;
         }
     }

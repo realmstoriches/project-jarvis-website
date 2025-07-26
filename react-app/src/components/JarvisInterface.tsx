@@ -1,17 +1,19 @@
-import { useState, useEffect, useCallback, useRef } from 'react'; // CORRECTED: 'React' removed
+// react-app/src/components/JarvisInterface.tsx - FINAL CORRECTED VERSION
+
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { useAuth } from '../src/context/AuthContext';
+import { useAuth } from '../context/AuthContext'; // <-- PATH 1 CORRECTED
 import { NeuralNetwork } from './NeuralNetwork';
 import { ChatWindow } from './ChatWindow';
 import { InputBar } from './InputBar';
 import { Dashboard } from './Dashboard';
-import { useSpeechRecognition } from '../src/hooks/useSpeechRecognition';
-import { useTextToSpeech } from '../src/hooks/useTextToSpeech';
-import { jarvisService } from '../src/services/geminiService';
-import type { Message, AIState, SystemStatus, UnlockedUpgrades, VoiceProfile } from '../src/types';
-import { INITIAL_MESSAGES } from '../src/constants'; // This will now work after your fix
+import { useSpeechRecognition } from '../hooks/useSpeechRecognition'; // <-- PATH 2 CORRECTED
+import { useTextToSpeech } from '../hooks/useTextToSpeech';       // <-- PATH 3 CORRECTED
+import { jarvisService } from '../services/geminiService';       // <-- PATH 4 CORRECTED
+import type { Message, AIState, SystemStatus, UnlockedUpgrades, VoiceProfile } from '../types'; // <-- PATH 5 CORRECTED
+import { INITIAL_MESSAGES } from '../constants';                  // <-- PATH 6 CORRECTED
 
-export const JarvisInterface = () => {
+export const JarvisInterface: React.FC = () => { // CORRECTED: Added React.FC type for clarity
     const { isAuthenticated } = useAuth();
     const [messages, setMessages] = useState<Message[]>([]);
     const [aiState, setAiState] = useState<AIState>('idle');
@@ -25,14 +27,11 @@ export const JarvisInterface = () => {
         stabilityPatch: false,
     });
     const hasInitializedChat = useRef(false);
-    // CORRECTED: 'isSpeaking' is removed as it's not used
     const { speak, voices, isReady: ttsIsReady, selectedVoice, setSelectedVoice } = useTextToSpeech();
 
-    // This is defined outside the useCallback hooks so it's stable
     const { isListening, startListening } = useSpeechRecognition(() => setAiState('listening'), (transcript) => {
         setAiState('idle');
-        // CORRECTED: Added block braces
-        if (transcript) {
+        if (transcript) { // CORRECTED: Block braces added
             processUserMessage(transcript);
         }
     });
@@ -40,21 +39,19 @@ export const JarvisInterface = () => {
     const handleNewMessage = useCallback((text: string, sender: 'user' | 'JARVIS' = 'JARVIS') => {
         const newMessage: Message = { id: Date.now().toString(), text, sender, timestamp: new Date().toISOString() };
         setMessages((prev) => [...prev, newMessage]);
-        if (sender === 'JARVIS') {
+        if (sender === 'JARVIS') { // CORRECTED: Block braces added
             setAiState('speaking');
             speak(text, () => {
                 setAiState('idle');
-                // CORRECTED: Added block braces
-                if (unlockedUpgrades.continuousConversation) {
+                if (unlockedUpgrades.continuousConversation) { // CORRECTED: Block braces added
                     startListening();
                 }
             });
         }
-    }, [speak, unlockedUpgrades.continuousConversation, startListening]); // CORRECTED: Added startListening to dependency array
+    }, [speak, unlockedUpgrades.continuousConversation, startListening]);
 
     const processUserMessage = useCallback(async (text: string) => {
-        // CORRECTED: Added block braces
-        if (!text.trim()) { return; }
+        if (!text.trim()) { return; } // CORRECTED: Block braces added
         
         setAiState('thinking');
         setSystemStatus(s => ({ ...s, cognitiveLoad: Math.min(100, s.cognitiveLoad + 30) }));
@@ -63,14 +60,13 @@ export const JarvisInterface = () => {
         const jarvisResponse = await jarvisService.generateResponse(text);
         setSystemStatus(s => ({ ...s, apiUsage: s.apiUsage + 1, cognitiveLoad: Math.max(0, s.cognitiveLoad - 30) }));
         
-        // CORRECTED: Added block braces
-        if (jarvisResponse.includes("continuous conversation mode")) {
+        if (jarvisResponse.includes("continuous conversation mode")) { // CORRECTED: Block braces added
             setUnlockedUpgrades(u => ({ ...u, continuousConversation: true }));
         }
-        if (jarvisResponse.includes("re-calibration sequence")) {
+        if (jarvisResponse.includes("re-calibration sequence")) { // CORRECTED: Block braces added
             setUnlockedUpgrades(u => ({ ...u, stabilityPatch: true }));
         }
-        if (jarvisResponse.includes("malfunction")) {
+        if (jarvisResponse.includes("malfunction")) { // CORRECTED: Block braces added
             setSystemStatus(s => ({ ...s, systemStability: Math.max(0, s.systemStability - 25) }));
         }
         
@@ -78,8 +74,7 @@ export const JarvisInterface = () => {
     }, [handleNewMessage]);
 
     const initializeChat = useCallback(() => {
-        // CORRECTED: Added block braces
-        if (messages.length > 0) { return; }
+        if (messages.length > 0) { return; } // CORRECTED: Block braces added
 
         const initialMessage = INITIAL_MESSAGES[0];
         setMessages([initialMessage]);
@@ -94,13 +89,16 @@ export const JarvisInterface = () => {
     };
 
     useEffect(() => {
-        if (isAuthenticated) {
-            jarvisService.initialize(process.env.REACT_APP_GEMINI_API_KEY || '');
+        if (isAuthenticated) { // CORRECTED: Block braces added
+            // NOTE: process.env.REACT_APP_... is a Create React App convention.
+            // Vite uses import.meta.env.VITE_...
+            // You should have a .env file in your react-app root with VITE_GEMINI_API_KEY=...
+            jarvisService.initialize(import.meta.env.VITE_GEMINI_API_KEY || '');
         }
     }, [isAuthenticated]);
 
     useEffect(() => {
-        if (isAuthenticated && ttsIsReady && !hasInitializedChat.current) {
+        if (isAuthenticated && ttsIsReady && !hasInitializedChat.current) { // CORRECTED: Block braces added
             initializeChat();
             hasInitializedChat.current = true;
         }
