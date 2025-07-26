@@ -2,7 +2,7 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { HashRouter } from 'react-router-dom';
+import { HashRouter } from 'react-router-dom'; // Use HashRouter for robust iframe compatibility
 import App from './App';
 import { AuthProvider } from './context/AuthContext';
 import './index.css';
@@ -14,7 +14,10 @@ if (!rootElement) {
 
 const root = ReactDOM.createRoot(rootElement);
 
-// The correct wrapping order: Router -> AuthProvider -> App
+// The correct wrapping order is critical:
+// 1. HashRouter provides routing capabilities.
+// 2. AuthProvider provides login information to everything inside it.
+// 3. App contains all your components that need routing and login info.
 root.render(
   <React.StrictMode>
     <HashRouter> 

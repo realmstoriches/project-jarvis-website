@@ -42,6 +42,11 @@ mongoose.connect(process.env.MONGO_URI)
 // --- CORE MIDDLEWARE ---
 app.use(
   helmet({
+    permissionPolicy: {
+      policy: {
+        payment: ["'self'"],
+      },
+    },
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
