@@ -1,15 +1,15 @@
 import { useState, useEffect, useCallback, useRef } from 'react'; // CORRECTED: 'React' removed
 import { Canvas } from '@react-three/fiber';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../src/context/AuthContext';
 import { NeuralNetwork } from './NeuralNetwork';
 import { ChatWindow } from './ChatWindow';
 import { InputBar } from './InputBar';
 import { Dashboard } from './Dashboard';
-import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
-import { useTextToSpeech } from '../hooks/useTextToSpeech';
-import { jarvisService } from '../services/geminiService';
-import type { Message, AIState, SystemStatus, UnlockedUpgrades, VoiceProfile } from '../types';
-import { INITIAL_MESSAGES } from '../constants'; // This will now work after your fix
+import { useSpeechRecognition } from '../src/hooks/useSpeechRecognition';
+import { useTextToSpeech } from '../src/hooks/useTextToSpeech';
+import { jarvisService } from '../src/services/geminiService';
+import type { Message, AIState, SystemStatus, UnlockedUpgrades, VoiceProfile } from '../src/types';
+import { INITIAL_MESSAGES } from '../src/constants'; // This will now work after your fix
 
 export const JarvisInterface = () => {
     const { isAuthenticated } = useAuth();

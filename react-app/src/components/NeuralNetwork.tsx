@@ -3,7 +3,7 @@ import React, { useMemo, useRef, ReactNode } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { OrbitControls, Html } from '@react-three/drei';
 import * as THREE from 'three';
-import type { AIState } from '../types';
+import type { AIState } from '../src/types';
 
 const PARTICLE_COUNT = 5000;
 const NETWORK_RADIUS = 20;

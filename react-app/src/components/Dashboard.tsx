@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from 'recharts';
-import { SystemStatus, UnlockedUpgrades, VoiceProfile } from '../types';
+import { SystemStatus, UnlockedUpgrades, VoiceProfile } from '../src/types';
 import { LoopIcon, ShieldIcon, SubscriptionIcon } from './Icons';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../src/context/AuthContext';
 import { SubscriptionModal } from './SubscriptionModal';
 
 interface DashboardProps {

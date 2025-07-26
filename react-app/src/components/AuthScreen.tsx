@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../src/context/AuthContext';
 
 // Re-usable input component for our forms
 const AuthInput = (props: React.ComponentPropsWithoutRef<'input'>) => (
