@@ -1,4 +1,4 @@
-// backend/server.js - COMPLETE VERBOSE LOGGING VERSION
+// backend/server.js - FINAL DEFINITIVE VERSION
 
 const path = require('path');
 require('dotenv').config();
@@ -63,6 +63,7 @@ app.use(
           "'self'",
           "https://www.google-analytics.com",
           "https://generativelanguage.googleapis.com",
+          "https://formspree.io", // <-- THE FIX
         ],
         imgSrc: ["'self'", "data:"],
         fontSrc: ["'self'", "https://cdnjs.cloudflare.com"],
