@@ -1,48 +1,31 @@
-// Import necessary components and hooks
+// react-app/src/App.tsx - FINAL BULLETPROOF VERSION
+
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext'; // Import both
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { JarvisInterface } from './components/JarvisInterface';
 import { PaymentStatus } from './components/PaymentStatus';
 import { AuthScreen } from './components/AuthScreen';
-import { Dashboard } from './components/Dashboard';
 
-const LoadingScreen = () => (
-    <div className="w-screen h-screen bg-black flex items-center justify-center">
-        <p className="text-cyan-400 text-2xl font-mono animate-pulse">Initializing Protocol...</p>
-    </div>
-);
-
-export default function App() {
-    const { isLoading, isAuthenticated } = useAuth();
+// Create a new component that contains your routes.
+// This component will be rendered INSIDE the AuthProvider.
+const AppRoutes = () => {
+    // Now it is safe to call useAuth here, because AppRoutes is a child of AuthProvider.
+    const { isAuthenticated, isLoading } = useAuth();
 
     if (isLoading) {
-        return <LoadingScreen />;
+        return (
+            <div className="w-screen h-screen bg-black flex items-center justify-center">
+                <p className="text-cyan-400 text-2xl font-mono animate-pulse">Initializing Protocol...</p>
+            </div>
+        );
     }
 
     return (
         <Routes>
-            {/* 
-              Public Route: /login
-              - If the user is NOT authenticated, this route renders the AuthScreen.
-              - If the user IS authenticated, we redirect them away from the login page
-                to the main application dashboard to avoid confusion.
-            */}
             <Route 
                 path="/login" 
-                element={
-                    !isAuthenticated ? <AuthScreen /> : <Navigate to="/dashboard" />
-                } 
-            />
-
-            {/* 
-              Protected Routes:
-              These routes are wrapped by ProtectedRoute. If the user is not authenticated,
-              ProtectedRoute will automatically redirect them to the "/login" route above.
-            */}
-            <Route
-                path="/"
-                element={<Navigate to="/dashboard" />} // Redirect root path to dashboard
+                element={!isAuthenticated ? <AuthScreen /> : <Navigate to="/dashboard" replace />} 
             />
             <Route
                 path="/dashboard"
@@ -53,24 +36,28 @@ export default function App() {
                 }
             />
             <Route
-                path="/payment-success"
+                path="/payment-status"
                 element={
                     <ProtectedRoute>
                         <PaymentStatus />
                     </ProtectedRoute>
                 }
             />
-             <Route
-                path="/payment-cancel"
-                element={
-                    <ProtectedRoute>
-                        <PaymentStatus />
-                    </ProtectedRoute>
-                }
+            {/* The root path now correctly redirects based on auth status */}
+            <Route 
+                path="/" 
+                element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />} 
             />
-
-            {/* A catch-all route to handle any other path */}
-            <Route path="*" element={<Navigate to="/dashboard" />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+    );
+}
+
+// The main App component now has only ONE job: set up the providers.
+export default function App() {
+    return (
+        <AuthProvider>
+            <AppRoutes />
+        </AuthProvider>
     );
 }

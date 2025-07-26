@@ -44,7 +44,7 @@ app.use(
   helmet({
     permissionPolicy: {
       policy: {
-        payment: ["'self'"],
+        payment: ["'self'", "https://js.stripe.com"],
       },
     },
     contentSecurityPolicy: {
