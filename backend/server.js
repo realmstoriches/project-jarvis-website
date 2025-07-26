@@ -1,4 +1,4 @@
-// backend/server.js - FINAL VERSION WITH COMPLETE CSP
+// backend/server.js - FINAL DEFINITIVE VERSION
 
 const path = require('path');
 require('dotenv').config();
@@ -32,10 +32,6 @@ mongoose.connect(process.env.MONGO_URI)
     });
 
 // --- CORE MIDDLEWARE ---
-
-// =========================================================================
-// --- FINAL, COMPREHENSIVE HELMET & CSP CONFIGURATION ---
-// =========================================================================
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -43,29 +39,26 @@ app.use(
         defaultSrc: ["'self'"],
         scriptSrc: [
           "'self'",
-          "'unsafe-inline'", // Allows inline <script> tags for GA
+          "'unsafe-inline'",
           "https://www.googletagmanager.com",
           "https://js.stripe.com",
+          "https://cdn.tailwindcss.com", // <-- FIX: Allow Tailwind CSS
         ],
-        // --- THIS IS THE FIX for the 'onload' attribute errors ---
         scriptSrcAttr: ["'unsafe-inline'"],
         styleSrc: [
           "'self'",
-          "'unsafe-inline'", // Required for some libraries and the onload trick
+          "'unsafe-inline'",
           "https://cdnjs.cloudflare.com",
           "https://stackpath.bootstrapcdn.com",
         ],
         connectSrc: [
           "'self'",
           "https://www.google-analytics.com",
+          "https://generativelanguage.googleapis.com", // <-- FIX: Allow Google Gemini API
         ],
         imgSrc: ["'self'", "data:"],
         fontSrc: ["'self'", "https://cdnjs.cloudflare.com"],
-        // --- THIS IS THE FIX for the Stripe iframe error ---
-        frameSrc: [
-            "'self'",
-            "https://js.stripe.com"
-        ],
+        frameSrc: ["'self'", "https://js.stripe.com"],
       },
     },
   })
