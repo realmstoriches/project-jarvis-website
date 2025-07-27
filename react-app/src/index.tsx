@@ -1,8 +1,8 @@
-// react-app/src/index.tsx - FINAL SIMPLIFIED VERSION
+// react-app/src/index.tsx - FINAL DEFINITIVE VERSION
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { HashRouter } from 'react-router-dom';
+import { HashRouter } from 'react-router-dom'; // Using HashRouter for iframe robustness
 import App from './App';
 import './index.css';
 
