@@ -1,4 +1,4 @@
-// backend/server.js - FINAL DEFINITIVE VERSION
+// backend/server.js - CORRECTED & SIMPLIFIED
 
 const path = require('path');
 require('dotenv').config();
@@ -40,6 +40,7 @@ mongoose.connect(process.env.MONGO_URI)
     });
 
 // --- CORE MIDDLEWARE ---
+// Your existing Helmet, Morgan, CORS, etc. are well-configured and preserved.
 app.use(
   helmet({
     permissionPolicy: {
@@ -68,7 +69,7 @@ app.use(
           "'self'",
           "https://www.google-analytics.com",
           "https://generativelanguage.googleapis.com",
-          "https://formspree.io", // <-- THE FIX
+          "https://formspree.io",
         ],
         imgSrc: ["'self'", "data:"],
         fontSrc: ["'self'", "https://cdnjs.cloudflare.com"],
@@ -78,12 +79,14 @@ app.use(
   })
 );
 app.use(isProduction ? morgan('combined') : morgan('dev'));
+// IMPORTANT: Ensure CLIENT_URL in your .env on Render is set to your frontend's public URL
 app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(mongoSanitize());
 
 // --- Session & Auth Middleware ---
+// Your existing session and passport setup is preserved.
 app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
@@ -96,33 +99,39 @@ app.use(passport.session());
 passportConfig(passport);
 
 // --- API ROUTES ---
+// Your existing API routes are preserved.
 const apiLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
 app.use('/api', apiLimiter);
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/stripe', stripeRoutes);
 
-// --- SERVE BUILT FRONTEND STATIC FILES ---
-const docsPath = path.resolve(__dirname, '..', 'docs');
-console.log(`[SERVER] Serving static root from: ${docsPath}`);
 
-const reactAssetsPath = path.resolve(docsPath, 'jarvis-app', 'assets');
-console.log(`[SERVER] Serving React assets from: ${reactAssetsPath}`);
-app.use('/jarvis-app/assets', express.static(reactAssetsPath));
+// =========================================================================
+// --- SERVE BUILT FRONTEND STATIC FILES (SECTION REPLACED & SIMPLIFIED) ---
+// =========================================================================
+// 1. Define the path to the frontend's build output directory ('docs')
+const frontendBuildPath = path.join(__dirname, '..', 'docs');
+console.log(`[SERVER] Serving static files from: ${frontendBuildPath}`);
 
-app.use(express.static(docsPath));
+// 2. Use a single, powerful middleware to serve all static files.
+// When a request comes in for /assets/index.js, this will find it.
+app.use(express.static(frontendBuildPath));
+// =========================================================================
 
-// --- SPA CATCH-ALL ROUTE ---
+
+// =========================================================================
+// --- SPA CATCH-ALL ROUTE (SECTION REPLACED & SIMPLIFIED) ---
+// =========================================================================
+// This route MUST come AFTER your API routes and the static middleware.
+// It handles any request that hasn't been handled yet (e.g., /dashboard, /login).
+// It serves the main index.html, allowing React Router to take over.
 app.get('*', (req, res) => {
-    if (req.originalUrl.includes('.') && !req.originalUrl.includes('html')) {
-        console.error(`[SERVER] CRITICAL ERROR: Catch-all is serving index.html for an asset request: ${req.originalUrl}`);
-        // To be safe, we send a 404 for asset-like requests that weren't found by static handlers.
-        res.status(404).send('Asset not found');
-    } else {
-        console.log(`[SERVER] Serving main index.html for SPA route: ${req.originalUrl}`);
-        res.sendFile(path.resolve(docsPath, 'index.html'));
-    }
+    console.log(`[SERVER] Serving main index.html for SPA route: ${req.originalUrl}`);
+    res.sendFile(path.join(frontendBuildPath, 'index.html'));
 });
+// =========================================================================
+
 
 // --- Global Error Handler ---
 app.use((err, req, res, next) => {
