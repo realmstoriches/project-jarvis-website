@@ -1,8 +1,8 @@
-// react-app/src/components/JarvisInterface.tsx - Upgraded for Metered Freemium Access
+// react-app/src/components/JarvisInterface.tsx - The Definitive, Unabridged Version
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { useAuth } from '../context/AuthContext'; // No change needed here
+import { useAuth } from '../context/AuthContext';
 import { NeuralNetwork } from './NeuralNetwork';
 import { ChatWindow } from './ChatWindow';
 import { InputBar } from './InputBar';
@@ -14,11 +14,10 @@ import type { Message, AIState, SystemStatus, UnlockedUpgrades, VoiceProfile } f
 import { INITIAL_MESSAGES } from '../constants';
 
 export const JarvisInterface: React.FC = () => {
-    // --- New AuthContext Integration ---
-    // Deconstruct the new values from our upgraded AuthContext.
+    // --- UPGRADE: Integrating with the new Freemium AuthContext ---
     const { isAuthenticated, isUsageLimitReached, incrementMessageCount } = useAuth();
     
-    // --- Existing State (No changes needed) ---
+    // --- Existing State (Unchanged) ---
     const [messages, setMessages] = useState<Message[]>([]);
     const [aiState, setAiState] = useState<AIState>('idle');
     const [systemStatus, setSystemStatus] = useState<SystemStatus>({
@@ -32,75 +31,111 @@ export const JarvisInterface: React.FC = () => {
     });
     const hasInitializedChat = useRef(false);
     const { speak, voices, isReady: ttsIsReady, selectedVoice, setSelectedVoice } = useTextToSpeech();
-    const { isListening, startListening } = useSpeechRecognition(/*...*/); // Shortened for brevity
 
-    // --- Core Logic Modifications ---
+    // --- Hooks and Callbacks (Complete and Unabridged) ---
 
-    const handleNewMessage = useCallback(/*...*/); // Existing logic is fine, shortened for brevity
+    const { isListening, startListening } = useSpeechRecognition(() => setAiState('listening'), (transcript) => {
+        setAiState('idle');
+        if (transcript) {
+            processUserMessage(transcript);
+        }
+    });
 
-    // UPGRADED: This function now acts as the gatekeeper for the freemium model.
+    const handleNewMessage = useCallback((text: string, sender: 'user' | 'JARVIS' = 'JARVIS') => {
+        const newMessage: Message = { id: Date.now().toString(), text, sender, timestamp: new Date().toISOString() };
+        setMessages((prev) => [...prev, newMessage]);
+        if (sender === 'JARVIS') {
+            setAiState('speaking');
+            speak(text, () => {
+                setAiState('idle');
+                if (unlockedUpgrades.continuousConversation) {
+                    startListening();
+                }
+            });
+        }
+    }, [speak, unlockedUpgrades.continuousConversation, startListening]);
+
+    // --- UPGRADE: The Gatekeeper for the Freemium Model ---
     const processUserMessage = useCallback(async (text: string) => {
-        // STEP 1: Check if the usage limit has been reached BEFORE processing.
+        if (!text.trim()) { return; }
+        
+        // STEP 1: Enforce the usage limit. This is the new paywall.
         if (isUsageLimitReached) {
             handleNewMessage(
-                "You have reached your free message limit. Please subscribe from the options below to continue the conversation.",
+                "You have reached your free message limit. To continue the conversation, please choose a plan from the options below.",
                 'JARVIS'
             );
             setAiState('idle');
-            return; // Halt execution immediately.
+            return; // Execution stops here.
         }
 
-        if (!text.trim()) { return; }
+        // STEP 2: Meter guest usage. Increment their count with every valid message.
+        if (!isAuthenticated) {
+            incrementMessageCount();
+        }
 
-        // STEP 2: For guests, increment their message count. This is the metering action.
-        incrementMessageCount();
-
-        // STEP 3: The rest of the logic proceeds as normal.
+        // STEP 3: Proceed with standard message processing.
         setAiState('thinking');
+        setSystemStatus(s => ({ ...s, cognitiveLoad: Math.min(100, s.cognitiveLoad + 30) }));
         const userMessage: Message = { id: Date.now().toString(), text, sender: 'user', timestamp: new Date().toISOString() };
         setMessages(prev => [...prev, userMessage]);
         
         try {
             const jarvisResponse = await jarvisService.generateResponse(text);
-            // ... (rest of your existing logic for handling the response) ...
+            setSystemStatus(s => ({ ...s, apiUsage: s.apiUsage + 1, cognitiveLoad: Math.max(0, s.cognitiveLoad - 30) }));
+            
+            if (jarvisResponse.includes("continuous conversation mode")) {
+                setUnlockedUpgrades(u => ({ ...u, continuousConversation: true }));
+            }
+            if (jarvisResponse.includes("re-calibration sequence")) {
+                setUnlockedUpgrades(u => ({ ...u, stabilityPatch: true }));
+            }
+            if (jarvisResponse.includes("malfunction")) {
+                setSystemStatus(s => ({ ...s, systemStability: Math.max(0, s.systemStability - 25) }));
+            }
+            
             handleNewMessage(jarvisResponse);
+
         } catch (error) {
             console.error("Error getting response from JARVIS service:", error);
             handleNewMessage("I seem to be encountering a temporary communication error. Please try again shortly.", 'JARVIS');
+            setAiState('idle'); // Ensure UI doesn't get stuck in a thinking state.
         }
 
-    }, [isUsageLimitReached, incrementMessageCount, handleNewMessage]); // Added new dependencies
+    }, [isAuthenticated, isUsageLimitReached, incrementMessageCount, handleNewMessage]);
 
+    // --- UPGRADE: Initialize Chat for ALL users ---
     const initializeChat = useCallback(() => {
-        if (hasInitializedChat.current) {
-            return;
-        hasI}nitializedChat.current = true; // Mark as initialized immediately
+        if (hasInitializedChat.current) return;
+        hasInitializedChat.current = true;
         
         const initialMessage = INITIAL_MESSAGES[0];
         setMessages([initialMessage]);
         setAiState('speaking');
         speak(initialMessage.text, () => setAiState('idle'));
-    }, [speak]); // Simplified dependencies
+    }, [speak]); // Dependency is only on `speak` function.
 
-    const handleStabilityPatch = () => { /* ... existing logic ... */ };
+    const handleStabilityPatch = () => {
+        setSystemStatus(s => ({ ...s, systemStability: 100 }));
+        setUnlockedUpgrades(u => ({ ...u, stabilityPatch: false }));
+        handleNewMessage("Re-calibration complete. System stability restored to 100%.");
+    };
 
-    // --- Lifecycle Hook Upgrades ---
-
-    // UPGRADED: Initialize services for ALL users on component mount.
+    // --- UPGRADE: Universal Lifecycle Hooks ---
+    
+    // Initialize services for ALL users on first component mount.
     useEffect(() => {
-        // SECURITY NOTE: Exposing an API key on the client-side is inherently risky.
-        // The ideal architecture is a "Backend-for-Frontend" (BFF) where your server
-        // makes calls to the Gemini API, protecting the key.
         jarvisService.initialize(import.meta.env.VITE_GEMINI_API_KEY || '');
-    }, []); // Empty dependency array ensures this runs only ONCE.
+    }, []); // Empty dependency array ensures this runs exactly once.
 
-    // UPGRADED: Initialize the chat for ALL users as soon as TTS is ready.
+    // Initialize the chat interface for ALL users as soon as Text-to-Speech is ready.
     useEffect(() => {
         if (ttsIsReady) {
             initializeChat();
         }
-    }, [ttsIsReady, initializeChat]); // Runs when TTS becomes ready.
+    }, [ttsIsReady, initializeChat]);
 
+    // --- Render Logic ---
     return (
         <>
             <Canvas camera={{ position: [0, 0, 15], fov: 75 }}>
@@ -119,13 +154,11 @@ export const JarvisInterface: React.FC = () => {
                 </NeuralNetwork>
             </Canvas>
             <div className="absolute bottom-0 left-0 right-0 p-4 flex justify-center">
-                {/* UPGRADED: The InputBar is now controlled by the usage limit. */}
                 <InputBar
                     onSendMessage={processUserMessage}
                     onVoiceStart={startListening}
+                    // --- UPGRADE: Input readiness is now simpler and controlled by the freemium limit ---
                     isReady={aiState === 'idle' && !isListening}
-                    // Pass the usage limit status directly to the InputBar.
-                    // This will be used to disable the input field and show a message.
                     isDisabled={isUsageLimitReached}
                 />
             </div>
