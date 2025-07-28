@@ -29,7 +29,7 @@ const DebugInfo = () => {
 // Your existing AppRoutes component, with ONE new line
 const AppRoutes = () => {
     // Now it is safe to call useAuth here, because AppRoutes is a child of AuthProvider.
-    const { isAuthenticated, isLoading } = useAuth();    
+    const { isAuthenticated, isLoading } = useAuth();
 
     // The ONLY change is adding this <DebugInfo /> component right here
     return (
