@@ -1,5 +1,12 @@
 // In react-app/src/App.tsx
 
+import { Routes, Route, Navigate } from "react-router-dom";
+import { AuthScreen } from "./components/AuthScreen";
+import { JarvisInterface } from "./components/JarvisInterface";
+import { PaymentStatus } from "./components/PaymentStatus";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import { useAuth, AuthProvider } from "./context/AuthContext";
+
 // ... (keep all your existing imports: Routes, Route, Navigate, useAuth, etc.)
 
 // The new Debug component
