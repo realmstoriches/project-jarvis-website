@@ -1,5 +1,5 @@
 {
-  "name": "project-jarvis-website",
+  "name": "backend",
   "version": "1.0.0",
   "description": "A Node.js and Express web server to host the Project Jarvis application and Stripe integration.",
   "main": "server.js",

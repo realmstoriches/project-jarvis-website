@@ -1,7 +1,7 @@
 {
-  "name": "project-jarvis",
+  "name": "react-app",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -23,6 +23,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
+    "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6"
   }
 }
