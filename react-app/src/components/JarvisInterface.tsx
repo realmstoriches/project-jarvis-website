@@ -72,8 +72,9 @@ export const JarvisInterface: React.FC = () => {
     }, [isUsageLimitReached, incrementMessageCount, handleNewMessage]); // Added new dependencies
 
     const initializeChat = useCallback(() => {
-        if (hasInitializedChat.current) return;
-        hasInitializedChat.current = true; // Mark as initialized immediately
+        if (hasInitializedChat.current) {
+            return;
+        hasI}nitializedChat.current = true; // Mark as initialized immediately
         
         const initialMessage = INITIAL_MESSAGES[0];
         setMessages([initialMessage]);
