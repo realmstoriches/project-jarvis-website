@@ -1,80 +1,89 @@
-// react-app/src/services/geminiService.ts - THE CORRECT AND FINAL VERSION
+// react-app/src/services/geminiService.ts - FINAL, PRODUCTION-READY & FULLY CORRECTED
 
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
-import { JARVIS_CONSTITUTION } from '../constants';
+import {
+    GoogleGenerativeAI,
+    HarmCategory,
+    HarmBlockThreshold
+} from "@google/generative-ai";
+import type {
+    GenerationConfig,
+    GenerativeModel
+} from "@google/generative-ai";
 
-/**
- * @file Manages all interactions with the Google Gemini API.
- * @description This service uses a class-based singleton pattern to ensure
- * robust state management and a clean, encapsulated interface for the AI model.
- */
+class GeminiService {
+    private genAI: GoogleGenerativeAI | null = null;
+    private model: GenerativeModel | null = null;
+    private isInitialized = false;
 
-// Configuration for the generative model's safety settings.
-const safetySettings = [
-  { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-  { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-  { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-  { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-];
+    private readonly MODEL_NAME = "gemini-1.5-flash";
+    private readonly API_VERSION = "v1beta";
 
-const modelConfig = {
-    temperature: 0.9,
-    topK: 1,
-    topP: 1,
-    maxOutputTokens: 2048,
-};
+    private readonly generationConfig: GenerationConfig = {
+        temperature: 0.9,
+        topK: 1,
+        topP: 1,
+        maxOutputTokens: 2048,
+    };
 
-// DEFINITIVE FIX: Use TypeScript's `InstanceType` utility to correctly derive the
-// type of an instance of the `GoogleGenerativeAI` class. This resolves the
-// "cannot be used as a type" error permanently.
-type AiInstanceType = InstanceType<typeof GoogleGenerativeAI>;
+    private readonly safetySettings = [
+        { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+        { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+        { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+        { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+    ];
 
-class JarvisService {
-    // The AI instance is now correctly typed using the derived type above.
-    private aiInstance: AiInstanceType | null = null;
-
-    /**
-     * Initializes the GoogleGenerativeAI instance with the provided API key.
-     * This must be called once before any other service methods.
-     * @param {string} apiKey - The Google Gemini API key.
-     */
     public initialize(apiKey: string): void {
         if (!apiKey) {
-            console.error("[GeminiService] API Key is missing. J.A.R.V.I.S. will be non-responsive.");
+            console.error("[GeminiService] Initialization failed: API key is missing.");
+            this.isInitialized = false;
             return;
         }
-        this.aiInstance = new GoogleGenerativeAI(apiKey);
-    }
 
-    /**
-     * Generates a response from the AI based on the user's prompt.
-     * @param {string} prompt - The user's input message.
-     * @returns {Promise<string>} The AI-generated text response.
-     */
-    public async generateResponse(prompt: string): Promise<string> {
-        if (this.aiInstance === null) {
-            throw new Error("Gemini Service not initialized. Call initialize() first.");
+        if (this.isInitialized) {
+            return;
         }
 
         try {
-            const model = this.aiInstance.getGenerativeModel({ model: "gemini-1.0-pro", safetySettings });
-            const chat = model.startChat({
-                generationConfig: modelConfig,
-                history: [
-                    { role: "user", parts: [{ text: JARVIS_CONSTITUTION }] },
-                    { role: "model", parts: [{ text: "Acknowledged. I am J.A.R.V.I.S. Systems online." }] },
-                ],
+            this.genAI = new GoogleGenerativeAI(apiKey);
+            this.model = this.genAI.getGenerativeModel({ model: this.MODEL_NAME }, { apiVersion: this.API_VERSION });
+            this.isInitialized = true;
+            console.log(`[GeminiService] Initialized successfully with model: ${this.MODEL_NAME}`);
+        } catch (error) {
+            console.error("[GeminiService] Failed to initialize GoogleGenerativeAI:", error);
+            this.isInitialized = false;
+        }
+    }
+
+    public async generateResponse(prompt: string): Promise<string> {
+        if (!this.isInitialized || !this.model) {
+            console.error("[GeminiService] Cannot generate response: service not initialized.");
+            throw new Error("The AI service is not properly configured. Please check the API key.");
+        }
+
+        try {
+            const chat = this.model.startChat({
+                generationConfig: this.generationConfig,
+                safetySettings: this.safetySettings,
+                history: [],
             });
 
             const result = await chat.sendMessage(prompt);
-            return result.response.text();
+            const response = result.response;
+            
+            if (response && typeof response.text === 'function') {
+                return response.text();
+            } else {
+                const blockReason = response?.promptFeedback?.blockReason;
+                console.warn(`[GeminiService] Response was empty or invalid. Block Reason: ${blockReason || 'Unknown'}`);
+                return "I am unable to respond to that prompt due to my safety guidelines. Please try a different topic.";
+            }
 
-        } catch (error) {
+        } catch (error: any) {
             console.error("[GeminiService] Error generating response:", error);
-            return "My apologies, I am currently unable to process that request due to a connection issue with my core systems.";
+            const message = error.message || "An unknown error occurred while communicating with the AI service.";
+            throw new Error(message);
         }
     }
 }
 
-// Export a single, shared instance of the service for the entire application.
-export const jarvisService = new JarvisService();
+export const jarvisService = new GeminiService();

@@ -1,6 +1,7 @@
 // react-app/src/components/JarvisInterface.tsx - FINAL, PRODUCTION-READY & FULLY CORRECTED
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Canvas } from '@react-three/fiber';
 import { useAuth } from '../context/AuthContext';
 import { NeuralNetwork } from './NeuralNetwork';
@@ -15,6 +16,7 @@ import { INITIAL_MESSAGES } from '../constants';
 
 export const JarvisInterface: React.FC = () => {
     const { user, isAuthenticated, isUsageLimitReached } = useAuth();
+    const navigate = useNavigate(); // CORRECTED: useNavigate is now correctly called here.
     
     const [messages, setMessages] = useState<Message[]>([]);
     const [aiState, setAiState] = useState<AIState>('idle');
@@ -55,27 +57,31 @@ export const JarvisInterface: React.FC = () => {
     }, [speak, startListening]);
 
     const processUserMessage = useCallback(async (text: string) => {
-        if (!text.trim()) { return; }
-
+        if (!text.trim()) {
+            return;
+        }
         if (isUsageLimitReached) {
             handleNewMessage("Usage limit reached. Please log in or subscribe to continue.", 'JARVIS');
             return;
         }
-
         if (!isAuthenticated) {
             window.parent.postMessage({ type: 'GUEST_MESSAGE_SENT' }, window.origin);
         }
-
         setAiState('thinking');
         setSystemStatus(s => ({ ...s, cognitiveLoad: Math.min(100, s.cognitiveLoad + 30) }));
         setMessages(prev => [...prev, { id: `${Date.now()}`, text, sender: 'user', timestamp: new Date().toISOString() }]);
-
         try {
             const jarvisResponse = await jarvisService.generateResponse(text);
             setSystemStatus(s => ({ ...s, apiUsage: s.apiUsage + 1, cognitiveLoad: Math.max(0, s.cognitiveLoad - 20) }));
-            if (jarvisResponse.includes("continuous conversation mode")) { setUnlockedUpgrades(u => ({ ...u, continuousConversation: true })); }
-            if (jarvisResponse.includes("re-calibration sequence")) { setUnlockedUpgrades(u => ({ ...u, stabilityPatch: true })); }
-            if (jarvisResponse.includes("malfunction")) { setSystemStatus(s => ({ ...s, systemStability: Math.max(0, s.systemStability - 25) })); }
+            if (jarvisResponse.includes("continuous conversation mode")) {
+                setUnlockedUpgrades(u => ({ ...u, continuousConversation: true }));
+            }
+            if (jarvisResponse.includes("re-calibration sequence")) {
+                setUnlockedUpgrades(u => ({ ...u, stabilityPatch: true }));
+            }
+            if (jarvisResponse.includes("malfunction")) {
+                setSystemStatus(s => ({ ...s, systemStability: Math.max(0, s.systemStability - 25) }));
+            }
             handleNewMessage(jarvisResponse);
         } catch (error) {
             console.error("[JarvisInterface] Error from Gemini service:", error);
@@ -90,13 +96,17 @@ export const JarvisInterface: React.FC = () => {
             const initialMessage = INITIAL_MESSAGES[0];
             setMessages([initialMessage]);
             setAiState('speaking');
-            speak(initialMessage.text, () => { setAiState('idle'); });
+            speak(initialMessage.text, () => {
+                setAiState('idle');
+            });
         }
     }, [speak]);
 
     useEffect(() => {
         const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
-        if (!apiKey) { console.error("CRITICAL: VITE_GEMINI_API_KEY is not set."); }
+        if (!apiKey) {
+            console.error("CRITICAL: VITE_GEMINI_API_KEY is not set.");
+        }
         jarvisService.initialize(apiKey);
     }, []);
 
@@ -122,6 +132,7 @@ export const JarvisInterface: React.FC = () => {
                     <Dashboard
                         user={user}
                         isAuthenticated={isAuthenticated}
+                        onNavigateToLogin={() => navigate('/login')}
                         status={systemStatus}
                         upgrades={unlockedUpgrades}
                         voices={voices}
