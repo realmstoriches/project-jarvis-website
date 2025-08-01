@@ -23,7 +23,7 @@ const app = express();
 const PORT = process.env.PORT || 4242;
 const isProduction = process.env.NODE_ENV === 'production';
 
-// --- PRESERVED: Your custom request logger ---
+// --- Custom request logger ---
 app.use((req, res, next) => {
     console.log(`[SERVER] INCOMING REQUEST: ${req.method} ${req.originalUrl}`);
     next();
@@ -39,7 +39,9 @@ mongoose.connect(process.env.MONGO_URI)
 
 // --- CORE MIDDLEWARE ---
 
-// PRESERVED: Your specific Helmet and Content Security Policy configuration
+// DEFINITIVE HELMET FIX: The overly-restrictive `permissionPolicy` has been removed.
+// The `allow="payment"` attribute on the iframe in index.html is the correct
+// way to delegate this permission.
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -61,7 +63,6 @@ app.use(isProduction ? morgan('combined') : morgan('dev'));
 app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
 
 // --- CRITICAL: Stripe webhook route must come BEFORE express.json() ---
-// The '/api/stripe' path prefix is added here, and stripeRoutes handles the rest.
 app.use('/api/stripe', stripeRoutes);
 
 // Standard body parsers
@@ -83,7 +84,7 @@ passportConfig(passport);
 
 // --- API ROUTES ---
 
-// PRESERVED: Your API rate limiter
+// API rate limiter
 const apiLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100, standardHeaders: true, legacyHeaders: false });
 app.use('/api', apiLimiter);
 
@@ -91,22 +92,18 @@ app.use('/api', apiLimiter);
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 
-// --- CORRECTED: Two-Frontend Static File Serving ---
+// --- Two-Frontend Static File Serving ---
 const mainSiteBuildPath = path.resolve(__dirname, '..', 'main-site');
 const jarvisAppBuildPath = path.resolve(__dirname, '..', 'react-app', 'dist');
 
-// Serve the main website (index.html, styles, etc.) from the root
 app.use(express.static(mainSiteBuildPath));
-// Serve the built React app when the path starts with /jarvis-app
 app.use('/jarvis-app', express.static(jarvisAppBuildPath));
 
-// --- CORRECTED: SPA Catch-All Routes for Both Frontends ---
-// This ensures that refreshing the page inside the iframe works correctly
+// --- SPA Catch-All Routes ---
 app.get('/jarvis-app/*', (req, res) => {
     res.sendFile(path.join(jarvisAppBuildPath, 'index.html'));
 });
 
-// This is the final catch-all for the main site's pages
 app.get('*', (req, res) => {
     res.sendFile(path.join(mainSiteBuildPath, 'index.html'));
 });

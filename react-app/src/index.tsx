@@ -1,8 +1,9 @@
-// react-app/src/index.tsx - FINAL DEFINITIVE VERSION
+// react-app/src/index.tsx - DEFINITIVELY CORRECTED
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { HashRouter } from 'react-router-dom'; // Using HashRouter for iframe robustness
+import { HashRouter } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext'; // Import the provider
 import App from './App';
 import './index.css';
 
@@ -13,10 +14,15 @@ if (!rootElement) {
 
 const root = ReactDOM.createRoot(rootElement);
 
+// THE CORRECT HIERARCHY:
+// HashRouter -> AuthProvider -> App
+// This ensures any component rendered by the router has access to the AuthContext.
 root.render(
   <React.StrictMode>
-    <HashRouter> 
-      <App />
+    <HashRouter>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
     </HashRouter>
   </React.StrictMode>
 );
