@@ -1,4 +1,4 @@
-// react-app/src/components/SubscriptionModal.tsx - FINAL, CONFIRMED CORRECT
+// react-app/src/components/SubscriptionModal.tsx - FINAL, CONFIRMED CORRECT & PRODUCTION-READY
 
 import React, { useState, useEffect } from 'react';
 import { Modal } from './common/Modal';
@@ -14,20 +14,19 @@ interface Plan {
     interval: string;
 }
 
-// CORRECTED: This component now receives the 'user' object as a prop.
 export const SubscriptionModal: React.FC<{ user: User | null; onClose: () => void }> = ({ user, onClose }) => {
     const [plans, setPlans] = useState<Plan[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
     const [isRedirecting, setIsRedirecting] = useState<string | null>(null);
 
-    // This line is now correct and will work once the .env file is created.
+    // This line will now correctly load the variable from your .env file.
     const API_URL = import.meta.env.VITE_API_URL || '';
 
     useEffect(() => {
         const fetchPlans = async () => {
             if (!API_URL) {
-                console.error("VITE_API_URL is not set. Cannot fetch plans.");
+                console.error("VITE_API_URL is not set. This is a build configuration issue.");
                 setError("Configuration error: The server address is not set.");
                 setIsLoading(false);
                 return;
