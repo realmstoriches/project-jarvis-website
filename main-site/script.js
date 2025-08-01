@@ -1,4 +1,4 @@
-// main-site/script.js - FINAL, REFACTORED, PRODUCTION-READY VERSION
+// main-site/script.js - FINAL, REFACTORED, WITH DIAGNOSTIC LOGGING
 
 'use strict';
 
@@ -219,24 +219,17 @@ document.addEventListener('DOMContentLoaded', function() {
     /**
      * [PLACEHOLDER] Checks the user's authentication status.
      * @returns {boolean} True if the user is authenticated, otherwise false.
-     * @description **IMPORTANT**: Replace the logic inside this function with your
-     * actual method for verifying a user's session (e.g., checking for a
-     * valid JWT in localStorage or a secure HTTP-only cookie).
      */
     const checkUserAuthentication = () => {
-        // Example: Check for a token in localStorage.
         const authToken = localStorage.getItem('authToken');
-        return !!authToken; // Returns true if token exists, false otherwise.
+        return !!authToken;
     };
 
     /**
      * [PLACEHOLDER] Checks if the user has reached their usage limit.
      * @returns {boolean} True if the limit is reached, otherwise false.
-     * @description **IMPORTANT**: Replace this with your actual logic for tracking
-     * anonymous or free-tier usage (e.g., counting messages in sessionStorage).
      */
     const checkUsageLimit = () => {
-        // Example: Check for a flag in sessionStorage.
         const limitReached = sessionStorage.getItem('usageLimitReached');
         return limitReached === 'true';
     };
@@ -247,21 +240,21 @@ document.addEventListener('DOMContentLoaded', function() {
     const sendAuthStatusToIframe = () => {
         const jarvisIframe = document.getElementById('jarvis-iframe');
 
-        // Guard clause: Ensure the iframe and its contentWindow are available.
         if (!jarvisIframe || !jarvisIframe.contentWindow) {
             console.error('[MAIN-SITE] Cannot send message: J.A.R.V.I.S. iframe not ready.');
             return;
         }
 
         const authPayload = {
-            type: 'AUTH_STATUS_FROM_PARENT', // A unique identifier for our message type.
+            type: 'AUTH_STATUS_FROM_PARENT',
             isAuthenticated: checkUserAuthentication(),
             isUsageLimitReached: checkUsageLimit(),
         };
 
-        // Post the message to the iframe's window.
+        // --- ADDED: DIAGNOSTIC LOG ---
+        console.log('[PARENT] Attempting to post message. Payload:', authPayload, 'Target Origin:', IFRAME_TARGET_ORIGIN);
+
         jarvisIframe.contentWindow.postMessage(authPayload, IFRAME_TARGET_ORIGIN);
-        console.log('[MAIN-SITE] Sent authentication status to J.A.R.V.I.S. iframe.', authPayload);
     };
 
     /**
