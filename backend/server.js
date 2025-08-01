@@ -21,36 +21,40 @@ const PORT = process.env.PORT || 4242;
 const isProduction = process.env.NODE_ENV === 'production';
 // --- Custom request logger ---
 app.use((req, res, next) => {
-console.log(`[SERVER] INCOMING REQUEST: ${req.method} ${req.originalUrl}`);
-next();
+    console.log(`[SERVER] INCOMING REQUEST: ${req.method} ${req.originalUrl}`);
+    next();
 });
 // --- Database Connection ---
 mongoose.connect(process.env.MONGO_URI)
-.then(() => console.log('MongoDB connected successfully.'))
-.catch(err => {
-console.error('CRITICAL: MongoDB connection error:', err);
-process.exit(1);
-});
+    .then(() => console.log('MongoDB connected successfully.'))
+    .catch(err => {
+        console.error('CRITICAL: MongoDB connection error:', err);
+        process.exit(1);
+    });
 // --- CORE MIDDLEWARE ---
-// DEFINITIVE HELMET FIX ---
+// --- DEFINITIVELY CORRECTED HELMET CONFIGURATION ---
 app.use(
-helmet({
-contentSecurityPolicy: {
-directives: {
-// Default to self, but expand where needed
-defaultSrc: ["'self'"],
-scriptSrc: ["'self'", "'unsafe-inline'", "https://js.stripe.com", "https://www.googletagmanager.com"],
-styleSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://stackpath.bootstrapcdn.com"],
-// CORRECTED: Allow connections to Stripe API and Google services
-connectSrc: ["'self'", "https://api.stripe.com", "https://generativelanguage.googleapis.com", "https://www.google-analytics.com", "https://formspree.io"],
-// CORRECTED: Allow images from Stripe's domains
-imgSrc: ["'self'", "data:", "https://.stripe.com", "https://.stripecdn.com"],
-fontSrc: ["'self'", "https://cdnjs.cloudflare.com"],
-// CORRECTED: Allow the iframe to host Stripe elements
-frameSrc: ["'self'", "https://js.stripe.com", "https://hooks.stripe.com"],
-},
-},
-})
+    helmet({
+        contentSecurityPolicy: {
+            directives: {
+                // Default to self, but expand where needed
+                defaultSrc: ["'self'"],
+                scriptSrc: ["'self'", "'unsafe-inline'", "https://js.stripe.com", "https://www.googletagmanager.com"],
+                // --- ADDED to fix inline event handler error (onclick, etc.) ---
+                // This explicitly allows attributes like 'onclick'.
+                // The best practice is to remove these from HTML and use addEventListener in JS.
+                scriptSrcAttr: ["'unsafe-inline'"],
+                styleSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://stackpath.bootstrapcdn.com"],
+                // Allow connections to Stripe API and Google services
+                connectSrc: ["'self'", "https://api.stripe.com", "https://generativelanguage.googleapis.com", "https://www.google-analytics.com", "https://formspree.io"],
+                // --- CORRECTED invalid source error with wildcard syntax (*) ---
+                imgSrc: ["'self'", "data:", "https://*.stripe.com", "https://*.stripecdn.com"],
+                fontSrc: ["'self'", "https://cdnjs.cloudflare.com"],
+                // Allow the iframe to host Stripe elements
+                frameSrc: ["'self'", "https://js.stripe.com", "https://hooks.stripe.com"],
+            },
+        },
+    })
 );
 app.use(isProduction ? morgan('combined') : morgan('dev'));
 app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
@@ -62,11 +66,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use(mongoSanitize());
 // --- Session & Auth Middleware ---
 app.use(session({
-secret: process.env.SESSION_SECRET,
-resave: false,
-saveUninitialized: false,
-store: MongoStore.create({ mongoUrl: process.env.MONGO_URI, collectionName: 'sessions' }),
-cookie: { secure: isProduction, httpOnly: true, sameSite: 'lax', maxAge: 1000 * 60 * 60 * 24 * 7 }
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({ mongoUrl: process.env.MONGO_URI, collectionName: 'sessions' }),
+    cookie: { secure: isProduction, httpOnly: true, sameSite: 'lax', maxAge: 1000 * 60 * 60 * 24 * 7 }
 }));
 app.use(passport.initialize());
 app.use(passport.session());
@@ -85,15 +89,15 @@ app.use(express.static(mainSiteBuildPath));
 app.use('/jarvis-app', express.static(jarvisAppBuildPath));
 // --- SPA Catch-All Routes ---
 app.get('/jarvis-app/*', (req, res) => {
-res.sendFile(path.join(jarvisAppBuildPath, 'index.html'));
+    res.sendFile(path.join(jarvisAppBuildPath, 'index.html'));
 });
 app.get('*', (req, res) => {
-res.sendFile(path.join(mainSiteBuildPath, 'index.html'));
+    res.sendFile(path.join(mainSiteBuildPath, 'index.html'));
 });
 // --- Global Error Handler ---
 app.use((err, req, res, next) => {
-console.error("GLOBAL ERROR HANDLER:", err.stack);
-res.status(500).json({ message: 'An unexpected server error occurred.' });
+    console.error("GLOBAL ERROR HANDLER:", err.stack);
+    res.status(500).json({ message: 'An unexpected server error occurred.' });
 });
 // --- Start Server ---
 app.listen(PORT, () => console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`));
