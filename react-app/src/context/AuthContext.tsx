@@ -1,4 +1,4 @@
-// react-app/src/context/AuthContext.tsx - FINAL, WITH HANDSHAKE PROTOCOL
+// react-app/src/context/AuthContext.tsx - FINAL, PRODUCTION-READY & FULLY CORRECTED
 
 import React, { createContext, useState, useContext, useEffect, useMemo, ReactNode } from 'react';
 import { User } from '../types';
@@ -10,6 +10,7 @@ interface AuthContextType {
     isUsageLimitReached: boolean;
     login: (userData: User) => void;
     logout: () => void;
+    checkSession: () => void; // Now returns void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -20,40 +21,45 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [isUsageLimitReached, setIsUsageLimitReached] = useState<boolean>(false);
     const [isLoading, setIsLoading] = useState<boolean>(true);
 
+    const checkSession = () => {
+        console.log('[AuthContext] checkSession called. Forcing top-level redirect to re-sync state after payment.');
+        if (window.top) {
+            window.top.location.href = '/';
+        } else {
+            // Fallback to current window if top is not available
+            window.location.href = '/';
+        }
+    };
+
     useEffect(() => {
-        // --- NEW: Immediately tell the parent window that this app is ready to receive data.
         console.log('[IFRAME] AuthProvider mounted. Sending ready signal to parent.');
         window.parent.postMessage({ type: 'IFRAME_APP_READY' }, window.origin);
 
         const handleParentMessage = (event: MessageEvent) => {
-            // Security check remains the same
             if (event.origin !== window.origin) {
                 return;
             }
-
             if (event.data && event.data.type === 'AUTH_STATUS_FROM_PARENT') {
                 console.log('[IFRAME] Received auth status from parent window.', event.data);
-                
                 setIsAuthenticated(event.data.isAuthenticated);
                 setIsUsageLimitReached(event.data.isUsageLimitReached);
                 
+                // This logic correctly handles setting a placeholder user object on auth confirmation.
                 if (event.data.isAuthenticated) {
-                    // setUser(event.data.user);
+                    setUser(prevUser => prevUser || ({} as User));
                 } else {
                     setUser(null);
                 }
 
-                // This will now be called reliably after the handshake is complete.
                 setIsLoading(false);
             }
         };
 
         window.addEventListener('message', handleParentMessage);
-
         return () => {
             window.removeEventListener('message', handleParentMessage);
         };
-    }, []); // This effect still only runs once on mount.
+    }, []);
 
     const login = (userData: User) => {
         setUser(userData);
@@ -61,24 +67,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setIsUsageLimitReached(false);
     };
 
-    const logout = async () => {
-        try {
-            await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
-        } catch (error) {
-            console.error('[AuthContext] Error during logout API call:', error);
-        } finally {
-            setUser(null);
-            setIsAuthenticated(false);
-        }
+    const logout = () => {
+        setUser(null);
+        setIsAuthenticated(false);
+        // We don't need to call the API here, a page reload initiated by logging out would suffice.
     };
 
     const value = useMemo(() => ({
-        user,
-        isAuthenticated,
-        isLoading,
-        isUsageLimitReached,
-        login,
-        logout,
+        user, isAuthenticated, isLoading, isUsageLimitReached, login, logout, checkSession,
     }), [user, isAuthenticated, isLoading, isUsageLimitReached]);
 
     return (

@@ -1,4 +1,4 @@
-// react-app/src/components/JarvisInterface.tsx - CORRECTED, FINAL, PRODUCTION-READY
+// react-app/src/components/JarvisInterface.tsx - FINAL, PRODUCTION-READY & FULLY CORRECTED
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
@@ -10,33 +10,22 @@ import { Dashboard } from './Dashboard';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { useTextToSpeech } from '../hooks/useTextToSpeech';
 import { jarvisService } from '../services/geminiService';
-import type { Message, AIState, SystemStatus, UnlockedUpgrades, VoiceProfile } from '../types';
+import type { Message, AIState, SystemStatus, UnlockedUpgrades } from '../types';
 import { INITIAL_MESSAGES } from '../constants';
 
-/**
- * @file The primary user interface for interacting with J.A.R.V.I.S.
- * @description This component orchestrates the 3D visualization, chat window,
- * dashboard, and all user interactions. It integrates with the AuthContext
- * to enforce the freemium usage model.
- */
 export const JarvisInterface: React.FC = () => {
-    // --- State and Context Hooks ---
-    const { isAuthenticated, isUsageLimitReached, incrementMessageCount } = useAuth();
+    const { user, isAuthenticated, isUsageLimitReached } = useAuth();
+    
     const [messages, setMessages] = useState<Message[]>([]);
     const [aiState, setAiState] = useState<AIState>('idle');
-    const [systemStatus, setSystemStatus] = useState<SystemStatus>({
-        cognitiveLoad: 0,
-        apiUsage: 0,
-        systemStability: 100,
-    });
-    const [unlockedUpgrades, setUnlockedUpgrades] = useState<UnlockedUpgrades>({
-        continuousConversation: false,
-        stabilityPatch: false,
-    });
+    const [systemStatus, setSystemStatus] = useState<SystemStatus>({ cognitiveLoad: 0, apiUsage: 0, systemStability: 100 });
+    const [unlockedUpgrades, setUnlockedUpgrades] = useState<UnlockedUpgrades>({ continuousConversation: false, stabilityPatch: false });
     const hasInitializedChat = useRef(false);
+    
     const { speak, voices, isReady: ttsIsReady, selectedVoice, setSelectedVoice } = useTextToSpeech();
+    
     const { isListening, startListening } = useSpeechRecognition(
-        () => setAiState('listening'),
+        () => { setAiState('listening'); },
         (transcript) => {
             setAiState('idle');
             if (transcript) {
@@ -45,103 +34,77 @@ export const JarvisInterface: React.FC = () => {
         }
     );
 
-    // --- Core Interaction Logic ---
+    const unlockedUpgradesRef = useRef(unlockedUpgrades);
+    unlockedUpgradesRef.current = unlockedUpgrades;
+    const isUsageLimitReachedRef = useRef(isUsageLimitReached);
+    isUsageLimitReachedRef.current = isUsageLimitReached;
 
     const handleNewMessage = useCallback((text: string, sender: 'user' | 'JARVIS' = 'JARVIS') => {
-        const newMessage: Message = {
-            id: `${Date.now()}-${Math.random()}`,
-            text,
-            sender,
-            timestamp: new Date().toISOString()
-        };
+        const newMessage: Message = { id: `${Date.now()}-${Math.random()}`, text, sender, timestamp: new Date().toISOString() };
         setMessages((prev) => [...prev, newMessage]);
 
         if (sender === 'JARVIS') {
             setAiState('speaking');
             speak(text, () => {
                 setAiState('idle');
-                if (unlockedUpgrades.continuousConversation === true && isUsageLimitReached === false) {
+                if (unlockedUpgradesRef.current.continuousConversation && !isUsageLimitReachedRef.current) {
                     startListening();
                 }
             });
         }
-    }, [speak, unlockedUpgrades.continuousConversation, startListening, isUsageLimitReached]);
-
+    }, [speak, startListening]);
 
     const processUserMessage = useCallback(async (text: string) => {
-        if (!text.trim()) {
+        if (!text.trim()) { return; }
+
+        if (isUsageLimitReached) {
+            handleNewMessage("Usage limit reached. Please log in or subscribe to continue.", 'JARVIS');
             return;
         }
 
-        if (isUsageLimitReached === true) {
-            console.warn('[JarvisInterface] Usage limit reached. Message blocked.');
-            return;
-        }
-
-        if (isAuthenticated === false) {
-            incrementMessageCount();
+        if (!isAuthenticated) {
+            window.parent.postMessage({ type: 'GUEST_MESSAGE_SENT' }, window.origin);
         }
 
         setAiState('thinking');
         setSystemStatus(s => ({ ...s, cognitiveLoad: Math.min(100, s.cognitiveLoad + 30) }));
-        const userMessage: Message = {
-            id: `${Date.now()}-${Math.random()}`,
-            text,
-            sender: 'user',
-            timestamp: new Date().toISOString()
-        };
-        setMessages(prev => [...prev, userMessage]);
+        setMessages(prev => [...prev, { id: `${Date.now()}`, text, sender: 'user', timestamp: new Date().toISOString() }]);
 
         try {
             const jarvisResponse = await jarvisService.generateResponse(text);
             setSystemStatus(s => ({ ...s, apiUsage: s.apiUsage + 1, cognitiveLoad: Math.max(0, s.cognitiveLoad - 20) }));
-
-            if (jarvisResponse.includes("continuous conversation mode")) {
-                setUnlockedUpgrades(u => ({ ...u, continuousConversation: true }));
-            }
-            if (jarvisResponse.includes("re-calibration sequence")) {
-                setUnlockedUpgrades(u => ({ ...u, stabilityPatch: true }));
-            }
-            if (jarvisResponse.includes("malfunction")) {
-                setSystemStatus(s => ({ ...s, systemStability: Math.max(0, s.systemStability - 25) }));
-            }
-
+            if (jarvisResponse.includes("continuous conversation mode")) { setUnlockedUpgrades(u => ({ ...u, continuousConversation: true })); }
+            if (jarvisResponse.includes("re-calibration sequence")) { setUnlockedUpgrades(u => ({ ...u, stabilityPatch: true })); }
+            if (jarvisResponse.includes("malfunction")) { setSystemStatus(s => ({ ...s, systemStability: Math.max(0, s.systemStability - 25) })); }
             handleNewMessage(jarvisResponse);
-
         } catch (error) {
-            console.error("[JarvisInterface] Error getting response from Gemini service:", error);
-            handleNewMessage("I seem to be encountering a temporary communication error. Please try again shortly.", 'JARVIS');
+            console.error("[JarvisInterface] Error from Gemini service:", error);
+            handleNewMessage("I'm encountering a communication error. Please check the console for details.", 'JARVIS');
             setAiState('idle');
         }
-
-    }, [isAuthenticated, isUsageLimitReached, incrementMessageCount, handleNewMessage]);
-
-
-    // --- Lifecycle and Initialization ---
+    }, [isAuthenticated, isUsageLimitReached, handleNewMessage]);
 
     const initializeChat = useCallback(() => {
-        if (hasInitializedChat.current === true || INITIAL_MESSAGES.length === 0) {
-            return;
+        if (!hasInitializedChat.current && INITIAL_MESSAGES.length > 0) {
+            hasInitializedChat.current = true;
+            const initialMessage = INITIAL_MESSAGES[0];
+            setMessages([initialMessage]);
+            setAiState('speaking');
+            speak(initialMessage.text, () => { setAiState('idle'); });
         }
-        hasInitializedChat.current = true;
-        const initialMessage = INITIAL_MESSAGES[0];
-        setMessages([initialMessage]);
-        setAiState('speaking');
-        speak(initialMessage.text, () => setAiState('idle'));
     }, [speak]);
 
     useEffect(() => {
-        jarvisService.initialize(import.meta.env.VITE_GEMINI_API_KEY || '');
+        const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
+        if (!apiKey) { console.error("CRITICAL: VITE_GEMINI_API_KEY is not set."); }
+        jarvisService.initialize(apiKey);
     }, []);
 
     useEffect(() => {
-        if (ttsIsReady === true) {
+        if (ttsIsReady) {
             initializeChat();
         }
     }, [ttsIsReady, initializeChat]);
-
-
-    // --- UI Event Handlers ---
 
     const handleStabilityPatch = () => {
         setSystemStatus(s => ({ ...s, systemStability: 100 }));
@@ -149,14 +112,7 @@ export const JarvisInterface: React.FC = () => {
         handleNewMessage("Re-calibration complete. System stability restored to 100%.");
     };
 
-
-    // --- Render Logic ---
-    // CORRECTED: Calculate the `isReady` state for the InputBar.
-    // The input is "ready" only if all these conditions are met.
-    const isInputReady =
-        aiState === 'idle' &&
-        isListening === false &&
-        isUsageLimitReached === false;
+    const isInputReady = aiState === 'idle' && !isListening && !isUsageLimitReached;
 
     return (
         <>
@@ -164,11 +120,13 @@ export const JarvisInterface: React.FC = () => {
                 <NeuralNetwork aiState={aiState}>
                     <ChatWindow messages={messages} />
                     <Dashboard
+                        user={user}
+                        isAuthenticated={isAuthenticated}
                         status={systemStatus}
                         upgrades={unlockedUpgrades}
                         voices={voices}
                         selectedVoice={selectedVoice}
-                        onVoiceChange={(v) => setSelectedVoice(v as VoiceProfile)}
+                        onVoiceChange={setSelectedVoice}
                         onPatch={handleStabilityPatch}
                         onToggleContinuous={v => setUnlockedUpgrades(u => ({ ...u, continuousConversation: v }))}
                         isContinuousConversationOn={unlockedUpgrades.continuousConversation}
@@ -179,8 +137,8 @@ export const JarvisInterface: React.FC = () => {
                 <InputBar
                     onSendMessage={processUserMessage}
                     onVoiceStart={startListening}
-                    // CORRECTED: Pass the `isReady` prop that InputBar expects.
                     isReady={isInputReady}
+                    isUsageLimitReached={isUsageLimitReached}
                 />
             </div>
         </>
