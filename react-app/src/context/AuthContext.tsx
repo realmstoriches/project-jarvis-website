@@ -1,134 +1,124 @@
-// react-app/src/context/AuthContext.tsx - FINAL, PRODUCTION-READY
+// react-app/src/context/AuthContext.tsx - FINAL, PRODUCTION-READY (IFRAME-AWARE)
 
-import React, { createContext, useState, useContext, useEffect, useMemo, useCallback } from 'react';
+import React, { createContext, useState, useContext, useEffect, useMemo, ReactNode } from 'react';
 import { User } from '../types';
 
 /**
  * @file Establishes the authentication context for the entire application.
- * @description This provider manages user state, authentication status, and
- * the freemium usage tracking for guest users. It serves as the central
- * authority for all authorization-related logic on the client-side.
+ * @description This provider is designed to run within an iframe. It does not manage
+ * authentication state itself; instead, it listens for authentication status messages
+ * sent from the parent window via `postMessage`. This makes the parent window the
+ * single source of truth for all authorization-related logic.
  */
 
-// --- Constants ---
-const GUEST_PROMPT_LIMIT = 25;
-const USAGE_COUNT_STORAGE_KEY = 'jarvisGuestUsageCount';
-
 // --- Context Shape ---
+// The shape of the data and functions the context will provide.
 interface AuthContextType {
     user: User | null;
     isAuthenticated: boolean;
-    isLoading: boolean;
-    usageCount: number;
+    isLoading: boolean; // Will be true until the parent window sends the initial auth status.
     isUsageLimitReached: boolean;
-    incrementMessageCount: () => void;
     login: (userData: User) => void;
     logout: () => void;
-    checkSession: () => Promise<void>;
 }
 
 // --- Context Creation ---
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // --- Provider Component ---
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+    // --- STATE MANAGEMENT ---
+    // The user object, if the user is authenticated.
     const [user, setUser] = useState<User | null>(null);
+    // Is the user authenticated? Controlled by the parent window.
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+    // Has the guest usage limit been reached? Controlled by the parent window.
+    const [isUsageLimitReached, setIsUsageLimitReached] = useState<boolean>(false);
+    // Start in a loading state. We will exit this state once we receive the
+    // first message from the parent window.
     const [isLoading, setIsLoading] = useState<boolean>(true);
-    const [usageCount, setUsageCount] = useState<number>(() => {
-        const storedCount = localStorage.getItem(USAGE_COUNT_STORAGE_KEY);
-        // Ensure we parse a valid number, defaulting to 0.
-        const count = parseInt(storedCount || '0', 10);
-        return isNaN(count) ? 0 : count;
-    });
 
-    const checkSession = useCallback(async () => {
-        if (!isLoading) {
-            setIsLoading(true);
-        }
-        try {
-            // The 'credentials: include' option is vital for sending the session cookie.
-            const response = await fetch('/api/auth/session', {
-                credentials: 'include',
-            });
+    // --- IFRAME COMMUNICATION LISTENER ---
+    // This is the core logic for the iframe architecture.
+    useEffect(() => {
+        /**
+         * Handles incoming messages from the parent window.
+         * @param {MessageEvent} event - The message event from the parent.
+         */
+        const handleParentMessage = (event: MessageEvent) => {
+            // CRITICAL SECURITY CHECK: Only accept messages from your own domain.
+            // In production, you might want to hardcode this to 'https://your-main-site.com'.
+            if (event.origin !== window.origin) {
+                console.warn(`[AuthContext] Ignored message from unexpected origin: ${event.origin}`);
+                return;
+            }
 
-            if (response.ok) {
-                const sessionData = await response.json();
-                if (sessionData.user) {
-                    setUser(sessionData.user);
+            // Check for the specific message type we expect from our main script.
+            if (event.data && event.data.type === 'AUTH_STATUS_FROM_PARENT') {
+                console.log('[AuthContext] Received authentication status from parent window.', event.data);
+                
+                // Update the iframe's auth state based on the parent's message.
+                setIsAuthenticated(event.data.isAuthenticated);
+                setIsUsageLimitReached(event.data.isUsageLimitReached);
+                
+                // If the user is authenticated, you could potentially receive user data here.
+                // For now, we'll just set a placeholder or null.
+                if (event.data.isAuthenticated) {
+                    // If the parent sends user data: setUser(event.data.user);
                 } else {
                     setUser(null);
                 }
-            } else {
-                setUser(null);
+
+                // We have received the authoritative state, so we are no longer loading.
+                setIsLoading(false);
             }
-        } catch (error) {
-            console.error('[AuthContext] Error checking session:', error);
-            setUser(null);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [isLoading]);
+        };
 
-    // Check session only on initial application load.
-    useEffect(() => {
-        checkSession();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+        // Attach the event listener.
+        window.addEventListener('message', handleParentMessage);
 
-    // Persist guest usage count to local storage whenever it changes.
-    useEffect(() => {
-        if (!user) { // Only store usage for guests.
-            localStorage.setItem(USAGE_COUNT_STORAGE_KEY, usageCount.toString());
-        }
-    }, [usageCount, user]);
+        // CRITICAL CLEANUP: Remove the listener when the provider unmounts to prevent memory leaks.
+        return () => {
+            window.removeEventListener('message', handleParentMessage);
+        };
+    }, []); // The empty dependency array ensures this effect runs only ONCE.
+
+    // --- LOCAL STATE FUNCTIONS ---
+    // These functions allow the UI within the iframe to react to login/logout events
+    // that happen inside the iframe itself.
 
     const login = (userData: User) => {
+        // This function would be called after a successful login API call
+        // from a form within this React app.
         setUser(userData);
-        // Once a user logs in, their free prompt usage is irrelevant.
-        // We clear the guest counter from storage and reset the state.
-        localStorage.removeItem(USAGE_COUNT_STORAGE_KEY);
-        setUsageCount(0);
+        setIsAuthenticated(true);
+        // The user is no longer a guest, so the usage limit is irrelevant.
+        setIsUsageLimitReached(false);
     };
 
     const logout = async () => {
+        // This function would be called after a logout button is clicked.
+        // It's still good practice to attempt the API call.
         try {
-            await fetch('/api/auth/logout', {
-                method: 'POST',
-                credentials: 'include',
-            });
+            await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
         } catch (error) {
             console.error('[AuthContext] Error during logout API call:', error);
         } finally {
+            // Reset the state locally regardless of API success.
             setUser(null);
-            setUsageCount(0); // Reset usage count for the next guest session.
+            setIsAuthenticated(false);
         }
     };
 
-    const incrementMessageCount = () => {
-        // This function is guarded to only increment for guest users.
-        if (!user) {
-            setUsageCount((prevCount) => prevCount + 1);
-        }
-    };
-
-    // --- Derived State (Best Practice) ---
-    // Authentication status is derived directly from the user object.
-    const isAuthenticated = !!user;
-    // Usage limit is reached only if the user is a GUEST and exceeds the limit.
-    const isUsageLimitReached = !isAuthenticated && usageCount >= GUEST_PROMPT_LIMIT;
-
-    // Memoize the context value to prevent unnecessary re-renders of consumers.
+    // Memoize the context value to prevent unnecessary re-renders of consuming components.
     const value = useMemo(() => ({
         user,
         isAuthenticated,
         isLoading,
-        usageCount,
         isUsageLimitReached,
-        incrementMessageCount,
         login,
         logout,
-        checkSession,
-    }), [user, isAuthenticated, isLoading, usageCount, isUsageLimitReached, checkSession]);
+    }), [user, isAuthenticated, isLoading, isUsageLimitReached]);
 
     return (
         <AuthContext.Provider value={value}>

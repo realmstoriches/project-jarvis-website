@@ -4,10 +4,11 @@
 
 /**
  * @file Manages the main website's client-side functionality.
- * @description This script handles the pop-up system and initializes the J.A.R.V.I.S.
- * application. It has been refactored to use standalone handler functions for
- * all event listeners, eliminating nested logic and ensuring compliance with
- * strict, production-level linting standards.
+ * @description This script handles the pop-up system, initializes the J.A.R.V.I.S.
+ * application, and communicates authentication status to the iframe via postMessage.
+ * It has been refactored to use standalone handler functions for all event listeners,
+ * eliminating nested logic and ensuring compliance with strict, production-level
+ * linting standards.
  */
 document.addEventListener('DOMContentLoaded', function() {
     console.log('[MAIN-SITE] script.js loaded. Initializing freemium model.');
@@ -16,6 +17,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const POPUP_FADE_DURATION_MS = 300;
     const POPUP_TRANSITION_DELAY_MS = 50;
     const LEAD_FORM_SUCCESS_MESSAGE_DURATION_MS = 2000;
+    // The origin of the iframe content. Use window.origin if they are the same.
+    const IFRAME_TARGET_ORIGIN = window.origin;
 
     // --- DOM Element References ---
     const mainPopupContainer = document.getElementById('main-popup-container');
@@ -197,6 +200,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 setTimeout(() => {
                     bootOverlay.style.display = 'none';
                     jarvisIframe.src = '/jarvis-app/index.html';
+                    
+                    // --- MODIFICATION: ATTACH ONLOAD HANDLER ---
+                    // This ensures the auth status is sent only after the iframe is fully loaded.
+                    jarvisIframe.onload = sendAuthStatusToIframe;
+
                     jarvisIframe.style.display = 'block';
                     console.log('[MAIN-SITE] Boot sequence complete. Iframe loaded.');
                 }, BOOT_FADE_OUT_DURATION_MS);
@@ -204,6 +212,56 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         typeNextLine();
+    };
+
+    // --- NEW: AUTHENTICATION & IFRAME COMMUNICATION ---
+
+    /**
+     * [PLACEHOLDER] Checks the user's authentication status.
+     * @returns {boolean} True if the user is authenticated, otherwise false.
+     * @description **IMPORTANT**: Replace the logic inside this function with your
+     * actual method for verifying a user's session (e.g., checking for a
+     * valid JWT in localStorage or a secure HTTP-only cookie).
+     */
+    const checkUserAuthentication = () => {
+        // Example: Check for a token in localStorage.
+        const authToken = localStorage.getItem('authToken');
+        return !!authToken; // Returns true if token exists, false otherwise.
+    };
+
+    /**
+     * [PLACEHOLDER] Checks if the user has reached their usage limit.
+     * @returns {boolean} True if the limit is reached, otherwise false.
+     * @description **IMPORTANT**: Replace this with your actual logic for tracking
+     * anonymous or free-tier usage (e.g., counting messages in sessionStorage).
+     */
+    const checkUsageLimit = () => {
+        // Example: Check for a flag in sessionStorage.
+        const limitReached = sessionStorage.getItem('usageLimitReached');
+        return limitReached === 'true';
+    };
+
+    /**
+     * Constructs and sends the authentication status payload to the J.A.R.V.I.S. iframe.
+     */
+    const sendAuthStatusToIframe = () => {
+        const jarvisIframe = document.getElementById('jarvis-iframe');
+
+        // Guard clause: Ensure the iframe and its contentWindow are available.
+        if (!jarvisIframe || !jarvisIframe.contentWindow) {
+            console.error('[MAIN-SITE] Cannot send message: J.A.R.V.I.S. iframe not ready.');
+            return;
+        }
+
+        const authPayload = {
+            type: 'AUTH_STATUS_FROM_PARENT', // A unique identifier for our message type.
+            isAuthenticated: checkUserAuthentication(),
+            isUsageLimitReached: checkUsageLimit(),
+        };
+
+        // Post the message to the iframe's window.
+        jarvisIframe.contentWindow.postMessage(authPayload, IFRAME_TARGET_ORIGIN);
+        console.log('[MAIN-SITE] Sent authentication status to J.A.R.V.I.S. iframe.', authPayload);
     };
 
     /**
