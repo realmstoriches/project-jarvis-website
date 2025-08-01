@@ -1,17 +1,8 @@
-// react-app/src/context/AuthContext.tsx - WITH DIAGNOSTIC LOGGING
+// react-app/src/context/AuthContext.tsx - FINAL, WITH HANDSHAKE PROTOCOL
 
 import React, { createContext, useState, useContext, useEffect, useMemo, ReactNode } from 'react';
 import { User } from '../types';
 
-/**
- * @file Establishes the authentication context for the entire application.
- * @description This provider is designed to run within an iframe. It does not manage
- * authentication state itself; instead, it listens for authentication status messages
- * sent from the parent window via `postMessage`. This makes the parent window the
- * single source of truth for all authorization-related logic.
- */
-
-// --- Context Shape ---
 interface AuthContextType {
     user: User | null;
     isAuthenticated: boolean;
@@ -21,10 +12,8 @@ interface AuthContextType {
     logout: () => void;
 }
 
-// --- Context Creation ---
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// --- Provider Component ---
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -32,19 +21,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [isLoading, setIsLoading] = useState<boolean>(true);
 
     useEffect(() => {
-        const handleParentMessage = (event: MessageEvent) => {
-            // --- ADDED: DIAGNOSTIC LOG ---
-            // This will log ANY message received by the iframe window.
-            console.log('[IFRAME] Message received from parent. Full Event:', event);
+        // --- NEW: Immediately tell the parent window that this app is ready to receive data.
+        console.log('[IFRAME] AuthProvider mounted. Sending ready signal to parent.');
+        window.parent.postMessage({ type: 'IFRAME_APP_READY' }, window.origin);
 
-            // CRITICAL SECURITY CHECK
+        const handleParentMessage = (event: MessageEvent) => {
+            // Security check remains the same
             if (event.origin !== window.origin) {
-                console.warn(`[AuthContext] Ignored message from unexpected origin: ${event.origin}`);
                 return;
             }
 
             if (event.data && event.data.type === 'AUTH_STATUS_FROM_PARENT') {
-                console.log('[AuthContext] Received authentication status from parent window.', event.data);
+                console.log('[IFRAME] Received auth status from parent window.', event.data);
                 
                 setIsAuthenticated(event.data.isAuthenticated);
                 setIsUsageLimitReached(event.data.isUsageLimitReached);
@@ -55,6 +43,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     setUser(null);
                 }
 
+                // This will now be called reliably after the handshake is complete.
                 setIsLoading(false);
             }
         };
@@ -64,7 +53,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return () => {
             window.removeEventListener('message', handleParentMessage);
         };
-    }, []);
+    }, []); // This effect still only runs once on mount.
 
     const login = (userData: User) => {
         setUser(userData);
@@ -99,7 +88,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     );
 };
 
-// --- Custom Hook ---
 export const useAuth = (): AuthContextType => {
     const context = useContext(AuthContext);
     if (context === undefined) {
