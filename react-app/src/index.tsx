@@ -3,20 +3,18 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { HashRouter } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext'; // Import the provider
+import { AuthProvider } from './context/AuthContext';
 import App from './App';
-import './index.css';
+import './index.css'; // This line imports all your Tailwind styles
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
-  throw new Error("Could not find root element to mount to");
+  throw new Error("Fatal Error: Root element not found.");
 }
 
 const root = ReactDOM.createRoot(rootElement);
 
-// THE CORRECT HIERARCHY:
-// HashRouter -> AuthProvider -> App
-// This ensures any component rendered by the router has access to the AuthContext.
+// THE CORRECT HIERARCHY: Router -> Provider -> App
 root.render(
   <React.StrictMode>
     <HashRouter>

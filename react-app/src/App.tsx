@@ -7,20 +7,14 @@ import { JarvisInterface } from './components/JarvisInterface';
 import { AuthScreen } from './components/AuthScreen';
 import { PaymentStatus } from './components/PaymentStatus';
 
-// NOTE: The `AuthProvider` has been moved to index.tsx. This file no longer
-// contains it, which is the correct pattern.
-
-// The Paywall/Subscription Modal
 const UsageLimitModal: React.FC = () => {
     const navigate = useNavigate();
-    const handleLoginClick = () => {
-        navigate('/login');
-    };
+    const handleLoginClick = () => { navigate('/login'); };
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
             <div className="w-full max-w-2xl mx-4 p-8 bg-gray-900/80 border border-cyan-500/50 rounded-2xl shadow-2xl shadow-cyan-500/20 text-center">
                 <h2 className="text-3xl font-mono font-bold text-cyan-300 mb-4">Usage Limit Reached</h2>
-                <p className="text-gray-300 text-lg mb-8">Please log in or create an account to continue the conversation and unlock unlimited access.</p>
+                <p className="text-gray-300 text-lg mb-8">Please log in or create an account to continue the conversation.</p>
                 <button onClick={handleLoginClick} className="px-8 py-3 bg-cyan-600 hover:bg-cyan-500 rounded-md transition-colors font-semibold text-white text-lg">
                     Login or Subscribe
                 </button>
@@ -29,7 +23,6 @@ const UsageLimitModal: React.FC = () => {
     );
 };
 
-// Application Entry Point
 export default function App() {
     const { isLoading, isAuthenticated, isUsageLimitReached } = useAuth();
 

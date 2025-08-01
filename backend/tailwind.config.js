@@ -1,7 +1,10 @@
+// react-app/tailwind.config.js - NEW AND ESSENTIAL
+
 /** @type {import('tailwindcss').Config} */
-module.exports = {
+export default {
   content: [
-    "./docs/**/*.{html,js}"
+    // This line is the key: it tells Tailwind to scan all your React components.
+    "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {},

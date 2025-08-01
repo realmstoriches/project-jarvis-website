@@ -4,7 +4,7 @@ export default {
   // for class names and to include them in the final CSS build.
   content: [
     "./index.html",
-    "./{components,hooks,services,context}/**/*.{js,ts,jsx,tsx}",
+    "./src/**/*.{js,ts,jsx,tsx}",
     "./*.{js,ts,jsx,tsx}",
   ],
   theme: {
