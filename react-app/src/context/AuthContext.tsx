@@ -1,134 +1,134 @@
-// react-app/src/context/AuthContext.tsx - Re-engineered for Freemium Model
+// react-app/src/context/AuthContext.tsx - FINAL, PRODUCTION-READY
 
-import { createContext, useState, useContext, useEffect, useCallback, type ReactNode } from 'react';
+import React, { createContext, useState, useContext, useEffect, useMemo, useCallback } from 'react';
+import { User } from '../types';
+
+/**
+ * @file Establishes the authentication context for the entire application.
+ * @description This provider manages user state, authentication status, and
+ * the freemium usage tracking for guest users. It serves as the central
+ * authority for all authorization-related logic on the client-side.
+ */
 
 // --- Constants ---
-const GUEST_USAGE_LIMIT = 20; // The number of free messages for a guest.
-const GUEST_STORAGE_KEY = 'jarvisGuestUsage'; // The key for localStorage.
+const GUEST_PROMPT_LIMIT = 25;
+const USAGE_COUNT_STORAGE_KEY = 'jarvisGuestUsageCount';
 
-// --- Type Definitions ---
-// The shape of a paying customer's data.
-interface User {
-    id: string;
-    email: string;
-    subscription: {
-        tier: string;
-        stripeCustomerId: string;
-        subscriptionStatus: string;
-    };
-}
-
-// The complete set of values our AuthContext will provide to the application.
+// --- Context Shape ---
 interface AuthContextType {
-    user: User | null;              // Holds data for a logged-in user.
-    isAuthenticated: boolean;         // True only for paying customers.
-    isLoading: boolean;               // True only on initial app load.
-    messageCount: number;             // Tracks guest message usage.
-    isUsageLimitReached: boolean;     // True if a guest has used all their messages.
-    incrementMessageCount: () => void; // Function to increment the guest message count.
-    logout: () => Promise<void>;      // Function to log out a paying customer.
+    user: User | null;
+    isAuthenticated: boolean;
+    isLoading: boolean;
+    usageCount: number;
+    isUsageLimitReached: boolean;
+    incrementMessageCount: () => void;
+    login: (userData: User) => void;
+    logout: () => void;
+    checkSession: () => Promise<void>;
 }
 
-// Create the context with a null default value.
-const AuthContext = createContext<AuthContextType | null>(null);
+// --- Context Creation ---
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// The AuthProvider component that will wrap our entire application.
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
-    // --- State Management ---
-    const [isLoading, setIsLoading] = useState(true);
+// --- Provider Component ---
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [messageCount, setMessageCount] = useState(0);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [usageCount, setUsageCount] = useState<number>(() => {
+        const storedCount = localStorage.getItem(USAGE_COUNT_STORAGE_KEY);
+        // Ensure we parse a valid number, defaulting to 0.
+        const count = parseInt(storedCount || '0', 10);
+        return isNaN(count) ? 0 : count;
+    });
 
-    // --- Core Logic: Check Auth Status on Load ---
-    useEffect(() => {
-        const checkAuthStatus = async () => {
-            console.log("[AUTH_V2] Checking session status...");
-            try {
-                const response = await fetch('/api/auth/status', {
-                    credentials: 'include',
-                });
-                
-                const data = await response.json();
+    const checkSession = useCallback(async () => {
+        if (!isLoading) {
+            setIsLoading(true);
+        }
+        try {
+            // The 'credentials: include' option is vital for sending the session cookie.
+            const response = await fetch('/api/auth/session', {
+                credentials: 'include',
+            });
 
-                // CASE 1: The user is an authenticated, paying customer.
-                if (response.ok && data.isAuthenticated && data.user) {
-                    console.log("[AUTH_V2] Authenticated user found.", data.user);
-                    setUser(data.user);
-                    setIsAuthenticated(true);
-                    // A paying customer has no message limit, so we clear any old guest data.
-                    localStorage.removeItem(GUEST_STORAGE_KEY);
-                } 
-                // CASE 2: The user is a guest (or a failed auth attempt).
-                else {
-                    console.log("[AUTH_V2] No authenticated user. Initializing guest session.");
-                    setIsAuthenticated(false);
+            if (response.ok) {
+                const sessionData = await response.json();
+                if (sessionData.user) {
+                    setUser(sessionData.user);
+                } else {
                     setUser(null);
-                    // Load the guest's message count from their browser's local storage.
-                    const savedCount = localStorage.getItem(GUEST_STORAGE_KEY);
-                    setMessageCount(savedCount ? parseInt(savedCount, 10) : 0);
                 }
-            } catch (error) {
-                console.error('[AUTH_V2] Auth status check failed. Assuming guest session.', error);
-                // In case of a network error, default safely to a guest session.
-                setIsAuthenticated(false);
+            } else {
                 setUser(null);
-                const savedCount = localStorage.getItem(GUEST_STORAGE_KEY);
-                setMessageCount(savedCount ? parseInt(savedCount, 10) : 0);
-            } finally {
-                setIsLoading(false);
-                console.log("[AUTH_V2] Session check complete.");
             }
-        };
-        checkAuthStatus();
+        } catch (error) {
+            console.error('[AuthContext] Error checking session:', error);
+            setUser(null);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [isLoading]);
+
+    // Check session only on initial application load.
+    useEffect(() => {
+        checkSession();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // --- Public Functions ---
-
-    // Increments the message count for GUESTS ONLY.
-    const incrementMessageCount = useCallback(() => {
-        // This function does nothing if the user is a paying customer.
-        if (isAuthenticated) {
-            return;
+    // Persist guest usage count to local storage whenever it changes.
+    useEffect(() => {
+        if (!user) { // Only store usage for guests.
+            localStorage.setItem(USAGE_COUNT_STORAGE_KEY, usageCount.toString());
         }
-        const newCount = messageCount + 1;
-        setMessageCount(newCount);
-        localStorage.setItem(GUEST_STORAGE_KEY, String(newCount));
-    }, [isAuthenticated, messageCount]);
+    }, [usageCount, user]);
 
-    // Logs out a paying customer and resets their state.
+    const login = (userData: User) => {
+        setUser(userData);
+        // Once a user logs in, their free prompt usage is irrelevant.
+        // We clear the guest counter from storage and reset the state.
+        localStorage.removeItem(USAGE_COUNT_STORAGE_KEY);
+        setUsageCount(0);
+    };
+
     const logout = async () => {
-        console.log("[AUTH_V2] Logging out user.");
         try {
             await fetch('/api/auth/logout', {
                 method: 'POST',
                 credentials: 'include',
             });
         } catch (error) {
-            console.error('[AUTH_V2] Logout API call failed:', error);
+            console.error('[AuthContext] Error during logout API call:', error);
         } finally {
             setUser(null);
-            setIsAuthenticated(false);
-            setMessageCount(0); // Reset message count on logout
-            localStorage.removeItem(GUEST_STORAGE_KEY);
+            setUsageCount(0); // Reset usage count for the next guest session.
         }
     };
 
-    // --- Derived State ---
-    // A boolean that is true only if the user is a guest AND has hit the usage limit.
-    const isUsageLimitReached = !isAuthenticated && messageCount >= GUEST_USAGE_LIMIT;
+    const incrementMessageCount = () => {
+        // This function is guarded to only increment for guest users.
+        if (!user) {
+            setUsageCount((prevCount) => prevCount + 1);
+        }
+    };
 
-    // --- Context Value ---
-    // The complete object provided to the rest of the app.
-    const value: AuthContextType = {
+    // --- Derived State (Best Practice) ---
+    // Authentication status is derived directly from the user object.
+    const isAuthenticated = !!user;
+    // Usage limit is reached only if the user is a GUEST and exceeds the limit.
+    const isUsageLimitReached = !isAuthenticated && usageCount >= GUEST_PROMPT_LIMIT;
+
+    // Memoize the context value to prevent unnecessary re-renders of consumers.
+    const value = useMemo(() => ({
         user,
         isAuthenticated,
         isLoading,
-        messageCount,
+        usageCount,
         isUsageLimitReached,
         incrementMessageCount,
-        logout
-    };
+        login,
+        logout,
+        checkSession,
+    }), [user, isAuthenticated, isLoading, usageCount, isUsageLimitReached, checkSession]);
 
     return (
         <AuthContext.Provider value={value}>
@@ -138,11 +138,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 };
 
 // --- Custom Hook ---
-// A clean way for components to access the auth context.
+/**
+ * A custom hook for consuming the AuthContext.
+ * Ensures the hook is used within a component wrapped by AuthProvider.
+ */
 export const useAuth = (): AuthContextType => {
     const context = useContext(AuthContext);
-    if (context === null) {
-        throw new Error('useAuth must be used within an AuthProvider. This is a critical error.');
+    if (context === undefined) {
+        throw new Error('useAuth must be used within an AuthProvider');
     }
     return context;
 };

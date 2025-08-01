@@ -1,44 +1,88 @@
+// react-app/src/hooks/useSpeechRecognition.ts - THE FINAL, CORRECT, PRODUCTION-READY VERSION
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-// The SpeechRecognition interface is not standard on all browsers, so we declare it.
+// --- SELF-CONTAINED TYPE DEFINITIONS for the Web Speech API ---
+// This approach guarantees the types exist, regardless of the global environment,
+// solving the "type not found" errors permanently.
+
+interface ISpeechRecognitionResult {
+    readonly isFinal: boolean;
+    readonly [index: number]: { readonly transcript: string };
+}
+
+interface ISpeechRecognitionEvent extends Event {
+    readonly results: ISpeechRecognitionResult[];
+}
+
+interface ISpeechRecognitionErrorEvent extends Event {
+    readonly error: string;
+}
+
+// Defines the interface for the SpeechRecognition instance itself.
+interface ISpeechRecognition extends EventTarget {
+    continuous: boolean;
+    interimResults: boolean;
+    lang: string;
+    start: () => void;
+    stop: () => void;
+    onstart: ((this: ISpeechRecognition, ev: Event) => any) | null;
+    onend: ((this: ISpeechRecognition, ev: Event) => any) | null;
+    onerror: ((this: ISpeechRecognition, ev: ISpeechRecognitionErrorEvent) => any) | null;
+    onresult: ((this: ISpeechRecognition, ev: ISpeechRecognitionEvent) => any) | null;
+}
+
+// Defines the type for the SpeechRecognition constructor.
+interface ISpeechRecognitionConstructor {
+    new (): ISpeechRecognition;
+}
+
+// Declares the window object with our vendor-prefixed properties.
 declare global {
   interface Window {
-    SpeechRecognition: any;
-    webkitSpeechRecognition: any;
+    SpeechRecognition: ISpeechRecognitionConstructor;
+    webkitSpeechRecognition: ISpeechRecognitionConstructor;
   }
 }
 
-interface SpeechRecognitionHook {
+// The public interface for our hook.
+export interface SpeechRecognitionHook {
   isListening: boolean;
-  transcript: string;
   startListening: () => void;
   stopListening: () => void;
   error: string | null;
   permissionGranted: boolean | null;
 }
 
+/**
+ * @file A custom hook for managing speech-to-text recognition.
+ * @description Provides a robust, type-safe, and production-ready interface for the Web Speech API.
+ * @param {() => void} onStart - Callback executed when recognition begins.
+ * @param {(transcript: string) => void} onEnd - Callback executed with the final transcript.
+ * @returns {SpeechRecognitionHook} An object containing state and control functions.
+ */
 export const useSpeechRecognition = (
-    onStart: () => void, 
+    onStart: () => void,
     onEnd: (transcript: string) => void
 ): SpeechRecognitionHook => {
-  const [isListening, setIsListening] = useState(false);
-  const [transcript, setTranscript] = useState('');
+  const [isListening, setIsListening] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [permissionGranted, setPermissionGranted] = useState<boolean | null>(null);
+  const recognitionRef = useRef<ISpeechRecognition | null>(null);
 
-  const recognitionRef = useRef<any>(null);
+  // Use refs to hold the latest callbacks, preventing stale closures in the effect.
+  const onStartRef = useRef(onStart);
+  onStartRef.current = onStart;
+  const onEndRef = useRef(onEnd);
+  onEndRef.current = onEnd;
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
+    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognitionAPI) {
       setError('Speech recognition not supported in this browser.');
       return;
     }
 
-    // Check for permission status
     if (navigator.permissions) {
         navigator.permissions.query({ name: 'microphone' as PermissionName }).then((permissionStatus) => {
             setPermissionGranted(permissionStatus.state === 'granted');
@@ -48,23 +92,22 @@ export const useSpeechRecognition = (
         });
     }
 
-
-    recognitionRef.current = new SpeechRecognition();
-    const recognition = recognitionRef.current;
+    const recognition = new SpeechRecognitionAPI();
+    recognitionRef.current = recognition;
     recognition.continuous = false;
     recognition.interimResults = false;
     recognition.lang = 'en-US';
 
     recognition.onstart = () => {
       setIsListening(true);
-      onStart();
+      onStartRef.current();
     };
 
     recognition.onend = () => {
       setIsListening(false);
     };
 
-    recognition.onerror = (event: any) => {
+    recognition.onerror = (event) => {
       console.error('Speech recognition error:', event.error);
       if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
         setError("Microphone access denied. Please enable it in your browser settings.");
@@ -74,41 +117,40 @@ export const useSpeechRecognition = (
       }
       setIsListening(false);
     };
-    
-    recognition.onresult = (event: any) => {
+
+    recognition.onresult = (event) => {
       const last = event.results.length - 1;
       const finalTranscript = event.results[last][0].transcript.trim();
-      setTranscript(finalTranscript);
-      onEnd(finalTranscript);
+      onEndRef.current(finalTranscript);
     };
 
     return () => {
       if (recognitionRef.current) {
+        recognitionRef.current.onstart = null;
+        recognitionRef.current.onend = null;
+        recognitionRef.current.onerror = null;
+        recognitionRef.current.onresult = null;
         recognitionRef.current.stop();
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onStart, onEnd]);
+  }, []); // This effect runs only once.
 
   const startListening = useCallback(() => {
-    if (recognitionRef.current && !isListening) {
+    if (recognitionRef.current && isListening === false) {
       try {
-        setTranscript('');
         setError(null);
         recognitionRef.current.start();
       } catch (err) {
         console.error("Error starting recognition:", err);
-        // This can happen if recognition is already started, which is a race condition.
-        // We can ignore it as the state is already `isListening`.
       }
     }
   }, [isListening]);
 
   const stopListening = useCallback(() => {
-    if (recognitionRef.current && isListening) {
+    if (recognitionRef.current && isListening === true) {
       recognitionRef.current.stop();
     }
   }, [isListening]);
 
-  return { isListening, transcript, startListening, stopListening, error, permissionGranted };
+  return { isListening, startListening, stopListening, error, permissionGranted };
 };

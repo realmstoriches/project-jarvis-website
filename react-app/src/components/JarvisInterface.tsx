@@ -1,4 +1,4 @@
-// react-app/src/components/JarvisInterface.tsx - The Definitive, Unabridged Version
+// react-app/src/components/JarvisInterface.tsx - CORRECTED, FINAL, PRODUCTION-READY
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
@@ -13,11 +13,15 @@ import { jarvisService } from '../services/geminiService';
 import type { Message, AIState, SystemStatus, UnlockedUpgrades, VoiceProfile } from '../types';
 import { INITIAL_MESSAGES } from '../constants';
 
+/**
+ * @file The primary user interface for interacting with J.A.R.V.I.S.
+ * @description This component orchestrates the 3D visualization, chat window,
+ * dashboard, and all user interactions. It integrates with the AuthContext
+ * to enforce the freemium usage model.
+ */
 export const JarvisInterface: React.FC = () => {
-    // --- UPGRADE: Integrating with the new Freemium AuthContext ---
+    // --- State and Context Hooks ---
     const { isAuthenticated, isUsageLimitReached, incrementMessageCount } = useAuth();
-    
-    // --- Existing State (Unchanged) ---
     const [messages, setMessages] = useState<Message[]>([]);
     const [aiState, setAiState] = useState<AIState>('idle');
     const [systemStatus, setSystemStatus] = useState<SystemStatus>({
@@ -31,59 +35,67 @@ export const JarvisInterface: React.FC = () => {
     });
     const hasInitializedChat = useRef(false);
     const { speak, voices, isReady: ttsIsReady, selectedVoice, setSelectedVoice } = useTextToSpeech();
-
-    // --- Hooks and Callbacks (Complete and Unabridged) ---
-
-    const { isListening, startListening } = useSpeechRecognition(() => setAiState('listening'), (transcript) => {
-        setAiState('idle');
-        if (transcript) {
-            processUserMessage(transcript);
+    const { isListening, startListening } = useSpeechRecognition(
+        () => setAiState('listening'),
+        (transcript) => {
+            setAiState('idle');
+            if (transcript) {
+                processUserMessage(transcript);
+            }
         }
-    });
+    );
+
+    // --- Core Interaction Logic ---
 
     const handleNewMessage = useCallback((text: string, sender: 'user' | 'JARVIS' = 'JARVIS') => {
-        const newMessage: Message = { id: Date.now().toString(), text, sender, timestamp: new Date().toISOString() };
+        const newMessage: Message = {
+            id: `${Date.now()}-${Math.random()}`,
+            text,
+            sender,
+            timestamp: new Date().toISOString()
+        };
         setMessages((prev) => [...prev, newMessage]);
+
         if (sender === 'JARVIS') {
             setAiState('speaking');
             speak(text, () => {
                 setAiState('idle');
-                if (unlockedUpgrades.continuousConversation) {
+                if (unlockedUpgrades.continuousConversation === true && isUsageLimitReached === false) {
                     startListening();
                 }
             });
         }
-    }, [speak, unlockedUpgrades.continuousConversation, startListening]);
+    }, [speak, unlockedUpgrades.continuousConversation, startListening, isUsageLimitReached]);
 
-    // --- UPGRADE: The Gatekeeper for the Freemium Model ---
+
     const processUserMessage = useCallback(async (text: string) => {
-        if (!text.trim()) { return; }
-        
-        // STEP 1: Enforce the usage limit. This is the new paywall.
-        if (isUsageLimitReached) {
-            handleNewMessage(
-                "You have reached your free message limit. To continue the conversation, please choose a plan from the options below.",
-                'JARVIS'
-            );
-            setAiState('idle');
-            return; // Execution stops here.
+        if (!text.trim()) {
+            return;
         }
 
-        // STEP 2: Meter guest usage. Increment their count with every valid message.
-        if (!isAuthenticated) {
+        if (isUsageLimitReached === true) {
+            console.warn('[JarvisInterface] Usage limit reached. Message blocked.');
+            return;
+        }
+
+        if (isAuthenticated === false) {
             incrementMessageCount();
         }
 
-        // STEP 3: Proceed with standard message processing.
         setAiState('thinking');
         setSystemStatus(s => ({ ...s, cognitiveLoad: Math.min(100, s.cognitiveLoad + 30) }));
-        const userMessage: Message = { id: Date.now().toString(), text, sender: 'user', timestamp: new Date().toISOString() };
+        const userMessage: Message = {
+            id: `${Date.now()}-${Math.random()}`,
+            text,
+            sender: 'user',
+            timestamp: new Date().toISOString()
+        };
         setMessages(prev => [...prev, userMessage]);
-        
+
         try {
             const jarvisResponse = await jarvisService.generateResponse(text);
-            setSystemStatus(s => ({ ...s, apiUsage: s.apiUsage + 1, cognitiveLoad: Math.max(0, s.cognitiveLoad - 30) }));
-            
+            setSystemStatus(s => ({ ...s, apiUsage: s.apiUsage + 1, cognitiveLoad: Math.max(0, s.cognitiveLoad - 20) }));
+
             if (jarvisResponse.includes("continuous conversation mode")) {
                 setUnlockedUpgrades(u => ({ ...u, continuousConversation: true }));
             }
@@ -93,27 +105,43 @@ export const JarvisInterface: React.FC = () => {
             if (jarvisResponse.includes("malfunction")) {
                 setSystemStatus(s => ({ ...s, systemStability: Math.max(0, s.systemStability - 25) }));
             }
-            
+
             handleNewMessage(jarvisResponse);
 
         } catch (error) {
-            console.error("Error getting response from JARVIS service:", error);
+            console.error("[JarvisInterface] Error getting response from Gemini service:", error);
             handleNewMessage("I seem to be encountering a temporary communication error. Please try again shortly.", 'JARVIS');
-            setAiState('idle'); // Ensure UI doesn't get stuck in a thinking state.
+            setAiState('idle');
         }
 
     }, [isAuthenticated, isUsageLimitReached, incrementMessageCount, handleNewMessage]);
 
-    // --- UPGRADE: Initialize Chat for ALL users ---
+
+    // --- Lifecycle and Initialization ---
+
     const initializeChat = useCallback(() => {
-        if (hasInitializedChat.current) return;
+        if (hasInitializedChat.current === true || INITIAL_MESSAGES.length === 0) {
+            return;
+        }
         hasInitializedChat.current = true;
-        
         const initialMessage = INITIAL_MESSAGES[0];
         setMessages([initialMessage]);
         setAiState('speaking');
         speak(initialMessage.text, () => setAiState('idle'));
-    }, [speak]); // Dependency is only on `speak` function.
+    }, [speak]);
+
+    useEffect(() => {
+        jarvisService.initialize(import.meta.env.VITE_GEMINI_API_KEY || '');
+    }, []);
+
+    useEffect(() => {
+        if (ttsIsReady === true) {
+            initializeChat();
+        }
+    }, [ttsIsReady, initializeChat]);
+
+
+    // --- UI Event Handlers ---
 
     const handleStabilityPatch = () => {
         setSystemStatus(s => ({ ...s, systemStability: 100 }));
@@ -121,24 +149,18 @@ export const JarvisInterface: React.FC = () => {
         handleNewMessage("Re-calibration complete. System stability restored to 100%.");
     };
 
-    // --- UPGRADE: Universal Lifecycle Hooks ---
-    
-    // Initialize services for ALL users on first component mount.
-    useEffect(() => {
-        jarvisService.initialize(import.meta.env.VITE_GEMINI_API_KEY || '');
-    }, []); // Empty dependency array ensures this runs exactly once.
-
-    // Initialize the chat interface for ALL users as soon as Text-to-Speech is ready.
-    useEffect(() => {
-        if (ttsIsReady) {
-            initializeChat();
-        }
-    }, [ttsIsReady, initializeChat]);
 
     // --- Render Logic ---
+    // CORRECTED: Calculate the `isReady` state for the InputBar.
+    // The input is "ready" only if all these conditions are met.
+    const isInputReady =
+        aiState === 'idle' &&
+        isListening === false &&
+        isUsageLimitReached === false;
+
     return (
         <>
-            <Canvas camera={{ position: [0, 0, 15], fov: 75 }}>
+            <Canvas camera={{ position: [0, 0, 15], fov: 75 }} style={{ position: 'absolute', top: 0, left: 0, zIndex: 1 }}>
                 <NeuralNetwork aiState={aiState}>
                     <ChatWindow messages={messages} />
                     <Dashboard
@@ -153,13 +175,12 @@ export const JarvisInterface: React.FC = () => {
                     />
                 </NeuralNetwork>
             </Canvas>
-            <div className="absolute bottom-0 left-0 right-0 p-4 flex justify-center">
+            <div className="absolute bottom-0 left-0 right-0 p-4 flex justify-center z-10">
                 <InputBar
                     onSendMessage={processUserMessage}
                     onVoiceStart={startListening}
-                    // --- UPGRADE: Input readiness is now simpler and controlled by the freemium limit ---
-                    isReady={aiState === 'idle' && !isListening}
-                    isDisabled={isUsageLimitReached}
+                    // CORRECTED: Pass the `isReady` prop that InputBar expects.
+                    isReady={isInputReady}
                 />
             </div>
         </>

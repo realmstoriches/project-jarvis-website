@@ -1,180 +1,235 @@
-// main-site/script.js - COMPLETE VERBOSE LOGGING VERSION
+// main-site/script.js - FINAL, REFACTORED, PRODUCTION-READY VERSION
 
-document.addEventListener("DOMContentLoaded", function() {
-    console.log("[MAIN-SITE] script.js loaded");
+'use strict';
 
-    // --- Get all necessary elements from the page ---
-    const mainPopupContainer = document.getElementById("main-popup-container");
-    const formMessage = document.getElementById("form-message");
-    const cookieConsentContent = document.getElementById("cookie-consent-content");
-    const acceptCookiesBtn = document.getElementById("accept-cookies");
-    const leadCaptureContent = document.getElementById("lead-capture-content");
-    const closeLeadFormBtn = document.getElementById("close-lead-form");
-    const leadCaptureForm = document.getElementById("lead-capture-form") || document.getElementById("lead-capture-form-main");
+/**
+ * @file Manages the main website's client-side functionality.
+ * @description This script handles the pop-up system and initializes the J.A.R.V.I.S.
+ * application. It has been refactored to use standalone handler functions for
+ * all event listeners, eliminating nested logic and ensuring compliance with
+ * strict, production-level linting standards.
+ */
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('[MAIN-SITE] script.js loaded. Initializing freemium model.');
 
-    // --- Pop-up and Cookie Consent Functions ---
-    const showPopup = (contentToShow) => {
-        if (mainPopupContainer) {
-            if (cookieConsentContent) { cookieConsentContent.style.display = "none"; }
-            if (leadCaptureContent) { leadCaptureContent.style.display = "none"; }
-            if (contentToShow === "cookie" && cookieConsentContent) { cookieConsentContent.style.display = "block"; } 
-            else if (contentToShow === "lead" && leadCaptureContent) { leadCaptureContent.style.display = "block"; }
-            mainPopupContainer.style.display = "flex";
-            setTimeout(() => { mainPopupContainer.classList.add("visible"); }, 50);
+    // --- Configuration Constants ---
+    const POPUP_FADE_DURATION_MS = 300;
+    const POPUP_TRANSITION_DELAY_MS = 50;
+    const LEAD_FORM_SUCCESS_MESSAGE_DURATION_MS = 2000;
+
+    // --- DOM Element References ---
+    const mainPopupContainer = document.getElementById('main-popup-container');
+    const formMessage = document.getElementById('form-message');
+    const cookieConsentContent = document.getElementById('cookie-consent-content');
+    const acceptCookiesBtn = document.getElementById('accept-cookies');
+    const leadCaptureContent = document.getElementById('lead-capture-content');
+    const closeLeadFormBtn = document.getElementById('close-lead-form');
+    const leadCaptureForm = document.getElementById('lead-capture-form-main');
+
+    // =========================================================================
+    // --- CORE HANDLER FUNCTIONS ---
+    // =========================================================================
+
+    /**
+     * Handles the successful submission of the lead capture form.
+     * @param {Response} response - The response object from the fetch call.
+     */
+    const handleLeadFormSuccess = (response) => {
+        // GUARD CLAUSE: Exit if the message element doesn't exist.
+        if (!formMessage) {
+            return;
         }
+        formMessage.style.color = '#28a745';
+        formMessage.textContent = 'Thank you! We\'ve received your submission.';
+        setTimeout(hidePopup, LEAD_FORM_SUCCESS_MESSAGE_DURATION_MS);
     };
 
-    const hidePopup = () => {
-        if (mainPopupContainer) {
-            mainPopupContainer.classList.remove("visible");
-            setTimeout(() => {
-                mainPopupContainer.style.display = "none";
-                if (cookieConsentContent) { cookieConsentContent.style.display = "none"; }
-                if (leadCaptureContent) { leadCaptureContent.style.display = "none"; }
-            }, 300);
+    /**
+     * Handles a failed submission of the lead capture form.
+     * @param {Error} [error] - An optional error object from a thrown exception.
+     */
+    const handleLeadFormFailure = (error) => {
+        if (error) {
+            console.error('[MAIN-SITE] Lead capture form submission error:', error);
         }
+        // GUARD CLAUSE: Exit if the message element doesn't exist.
+        if (!formMessage) {
+            return;
+        }
+        formMessage.style.color = '#dc3545';
+        formMessage.textContent = 'Oops! There was a problem submitting the form.';
     };
 
-    const handleLeadCaptureDisplay = () => {
-        if (localStorage.getItem("cookiesAccepted") === "true" && !sessionStorage.getItem("leadCapturedThisSession")) {
-            showPopup("lead");
-            sessionStorage.setItem("leadCapturedThisSession", "true");
-        } else {
-            hidePopup();
-        }
-    };
-
-    const initializePopups = () => {
-        if (localStorage.getItem("cookiesAccepted")) {
-            handleLeadCaptureDisplay();
-        } else {
-            showPopup("cookie");
-        }
-    };
-
-    // --- Pop-up Event Listeners ---
-    if (acceptCookiesBtn) {
-        acceptCookiesBtn.addEventListener("click", () => {
-            localStorage.setItem("cookiesAccepted", "true");
-            hidePopup();
-            setTimeout(handleLeadCaptureDisplay, 300);
-        });
-    }
-    if (closeLeadFormBtn) {
-        closeLeadFormBtn.addEventListener("click", hidePopup);
-    }
-    if (leadCaptureForm) {
-        leadCaptureForm.addEventListener("submit", async (event) => {
-            event.preventDefault();
+    /**
+     * An async function that manages the submission of the lead capture form.
+     * @param {Event} event - The form submission event.
+     */
+    const handleLeadFormSubmit = async(event) => {
+        event.preventDefault();
+        try {
             const formData = new FormData(event.target);
-            try {
-                const response = await fetch(leadCaptureForm.action, { method: "POST", body: formData, headers: { "Accept": "application/json" } });
-                if (formMessage) {
-                    if (response.ok) {
-                        formMessage.style.color = "#28a745";
-                        formMessage.textContent = "Thank you! We've received your submission.";
-                        setTimeout(() => { hidePopup(); }, 2000);
-                    } else {
-                        formMessage.style.color = "#dc3545";
-                        formMessage.textContent = "Oops! There was a problem.";
-                    }
-                }
-            } catch (error) {
-                if (formMessage) {
-                    formMessage.style.color = "#dc3545";
-                    formMessage.textContent = "Oops! There was a problem submitting the form.";
-                }
+            const response = await fetch(leadCaptureForm.action, {
+                method: 'POST',
+                body: formData,
+                headers: { 'Accept': 'application/json' },
+            });
+
+            if (response.ok) {
+                handleLeadFormSuccess(response);
+            } else {
+                handleLeadFormFailure();
             }
-        });
-    }
+        } catch (error) {
+            handleLeadFormFailure(error);
+        }
+    };
 
-    // --- Initial Call for pop-up logic ---
-    initializePopups();
+    /**
+     * Displays a specific pop-up content window (e.g., 'cookie' or 'lead').
+     * @param {'cookie' | 'lead'} contentToShow - The type of content to display.
+     */
+    const showPopup = (contentToShow) => {
+        if (!mainPopupContainer) {
+            return;
+        }
+        if (cookieConsentContent) {
+            cookieConsentContent.style.display = 'none';
+        }
+        if (leadCaptureContent) {
+            leadCaptureContent.style.display = 'none';
+        }
+        if (contentToShow === 'cookie' && cookieConsentContent) {
+            cookieConsentContent.style.display = 'block';
+        } else if (contentToShow === 'lead' && leadCaptureContent) {
+            leadCaptureContent.style.display = 'block';
+        }
+        mainPopupContainer.style.display = 'flex';
+        setTimeout(() => mainPopupContainer.classList.add('visible'), POPUP_TRANSITION_DELAY_MS);
+    };
 
-    // =========================================================================
-    // --- LOGIN BUTTON LOGIC ---
-    // =========================================================================
-    const loginButton = document.getElementById('login-button');
-    if (loginButton) {
-        loginButton.addEventListener('click', (event) => {
-            event.preventDefault();
-            const jarvisIframe = document.getElementById('jarvis-iframe');
-            const pricingTable = document.querySelector('stripe-pricing-table');
-            const customerPortalSection = document.getElementById('customer-portal');
-            console.log("[MAIN-SITE] Login button clicked. Loading auth screen.");
-
-            if (pricingTable) pricingTable.style.display = 'none';
-            if (customerPortalSection) customerPortalSection.style.display = 'none';
-            
-            if (jarvisIframe) {
-                const iframeSrc = '/jarvis-app/index.html#/login';
-                console.log(`[MAIN-SITE] Setting iframe src to: ${iframeSrc}`);
-                jarvisIframe.src = iframeSrc;
-                jarvisIframe.style.display = 'block';
+    /**
+     * Hides the main pop-up container with a fade-out animation.
+     */
+    const hidePopup = () => {
+        if (!mainPopupContainer) {
+            return;
+        }
+        mainPopupContainer.classList.remove('visible');
+        setTimeout(() => {
+            mainPopupContainer.style.display = 'none';
+            if (cookieConsentContent) {
+                cookieConsentContent.style.display = 'none';
             }
-        });
-    }
+            if (leadCaptureContent) {
+                leadCaptureContent.style.display = 'none';
+            }
+        }, POPUP_FADE_DURATION_MS);
+    };
 
-    /* ==========================================================================
-       IFRAME AUTHENTICATION AND LOADING LOGIC
-       ========================================================================== */
-    const jarvisIframe = document.getElementById('jarvis-iframe');
-    const pricingTable = document.querySelector('stripe-pricing-table');
-    const customerPortalSection = document.getElementById('customer-portal');
+    /**
+     * Determines whether to show the lead capture pop-up.
+     */
+    const handleLeadCaptureDisplay = () => {
+        const hasAcceptedCookies = localStorage.getItem('cookiesAccepted') === 'true';
+        const hasCapturedLeadThisSession = sessionStorage.getItem('leadCapturedThisSession') === 'true';
+        if (hasAcceptedCookies && !hasCapturedLeadThisSession) {
+            showPopup('lead');
+            sessionStorage.setItem('leadCapturedThisSession', 'true');
+        } else {
+            hidePopup();
+        }
+    };
 
+    /**
+     * Handles the click event for the 'Accept Cookies' button.
+     */
+    const handleAcceptCookies = () => {
+        localStorage.setItem('cookiesAccepted', 'true');
+        hidePopup();
+        setTimeout(handleLeadCaptureDisplay, POPUP_FADE_DURATION_MS);
+    };
+
+    /**
+     * Manages the boot-up animation and loads the Jarvis React application.
+     */
     const loadJarvisApp = () => {
-        console.log("[MAIN-SITE] loadJarvisApp called.");
+        console.log('[MAIN-SITE] loadJarvisApp called. Starting boot sequence.');
+        const BOOT_SEQUENCE = [
+            { text: 'Initializing cognitive core...', delay: 500 },
+            { text: 'Calibrating neural matrix...', delay: 700 },
+            { text: 'Quantum processors spooling...', delay: 400 },
+            { text: 'Establishing secure comms link...', delay: 800 },
+            { text: 'Welcome, Administrator.', delay: 1000 },
+        ];
+        const BOOT_FADE_OUT_DURATION_MS = 500;
+        const jarvisIframe = document.getElementById('jarvis-iframe');
         const bootOverlay = document.getElementById('jarvis-boot-overlay');
         const bootTextElement = document.getElementById('boot-text');
         const bootCursor = document.getElementById('boot-cursor');
-        const bootSequence = ["Initializing cognitive core...", 500, "Calibrating neural matrix...", 700, "Quantum processors spooling...", 400, "Establishing secure comms link...", 800, "Welcome, Administrator.", 1000];
-        if (!bootOverlay || !bootTextElement || !jarvisIframe || !bootCursor) return;
-        if (pricingTable) pricingTable.style.display = 'none';
-        if (customerPortalSection) customerPortalSection.style.display = 'none';
+
+        if (!bootOverlay || !bootTextElement || !jarvisIframe || !bootCursor) {
+            console.error('[MAIN-SITE] Critical boot sequence elements are missing.');
+            return;
+        }
+
         jarvisIframe.style.display = 'none';
         bootOverlay.style.display = 'flex';
         bootTextElement.innerHTML = '';
         bootCursor.style.display = 'inline-block';
-        let i = 0;
-        const typeWriter = () => {
-            if (i < bootSequence.length) {
-                const item = bootSequence[i];
-                if (typeof item === 'string') { bootTextElement.innerHTML += item + '\n'; }
-                const delay = typeof item === 'number' ? item : 200;
-                i++;
-                setTimeout(typeWriter, delay);
-            } else {
-                bootCursor.style.display = 'none';
-                setTimeout(() => {
-                    bootOverlay.style.opacity = '0';
-                    bootOverlay.style.transition = 'opacity 0.5s ease-out';
-                    setTimeout(() => {
-                        bootOverlay.style.display = 'none';
-                        jarvisIframe.src = '/jarvis-app/index.html';
-                        jarvisIframe.style.display = 'block';
-                    }, 500);
-                }, 500);
+
+        let sequenceIndex = 0;
+        const typeNextLine = () => {
+            if (sequenceIndex >= BOOT_SEQUENCE.length) {
+                finishBootSequence();
+                return;
             }
+            const currentLine = BOOT_SEQUENCE[sequenceIndex];
+            bootTextElement.innerHTML += currentLine.text + '\n';
+            sequenceIndex++;
+            setTimeout(typeNextLine, currentLine.delay);
         };
-        typeWriter();
+
+        const finishBootSequence = () => {
+            bootCursor.style.display = 'none';
+            setTimeout(() => {
+                bootOverlay.style.opacity = '0';
+                bootOverlay.style.transition = `opacity ${BOOT_FADE_OUT_DURATION_MS}ms ease-out`;
+                setTimeout(() => {
+                    bootOverlay.style.display = 'none';
+                    jarvisIframe.src = '/jarvis-app/index.html';
+                    jarvisIframe.style.display = 'block';
+                    console.log('[MAIN-SITE] Boot sequence complete. Iframe loaded.');
+                }, BOOT_FADE_OUT_DURATION_MS);
+            }, BOOT_FADE_OUT_DURATION_MS);
+        };
+
+        typeNextLine();
     };
 
-    const showSalesPage = () => {
-        console.log("[MAIN-SITE] showSalesPage called.");
-        if (pricingTable) { pricingTable.style.display = 'block'; }
-        if (customerPortalSection) { customerPortalSection.style.display = 'block'; }
-        if (jarvisIframe) {
-            jarvisIframe.style.display = 'none';
-            jarvisIframe.src = 'about:blank';
+    /**
+     * Initializes the entire pop-up system on page load.
+     */
+    const initializePopups = () => {
+        if (localStorage.getItem('cookiesAccepted')) {
+            handleLeadCaptureDisplay();
+        } else {
+            showPopup('cookie');
+        }
+
+        if (acceptCookiesBtn) {
+            acceptCookiesBtn.addEventListener('click', handleAcceptCookies);
+        }
+        if (closeLeadFormBtn) {
+            closeLeadFormBtn.addEventListener('click', hidePopup);
+        }
+        if (leadCaptureForm) {
+            leadCaptureForm.addEventListener('submit', handleLeadFormSubmit);
         }
     };
 
-    // --- The Main Authentication Check ---
-    const authToken = localStorage.getItem('userAuthToken');
-    console.log(`[MAIN-SITE] Initial auth token check. Found token: ${!!authToken}`);
-    if (authToken) {
-        loadJarvisApp();
-    } else {
-        showSalesPage();
-    }
+    // =========================================================================
+    // --- SCRIPT ENTRY POINT ---
+    // =========================================================================
+    initializePopups();
+    loadJarvisApp();
 });

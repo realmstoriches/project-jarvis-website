@@ -1,39 +1,54 @@
-import { useState, useEffect } from 'react'; // <-- CORRECTED: 'React' has been removed
+// react-app/src/components/SubscriptionModal.tsx - DEFINITIVELY CORRECTED, FINAL, PRODUCTION-READY
+
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Modal } from './common/Modal';
 import { CreditCardIcon, SpinnerIcon } from './Icons';
+// CORRECTED: The unused 'User' type import has been removed.
 
-// Define the shape of the plan data we expect from the backend
+/**
+ * @file Manages the user subscription interface.
+ * @description This modal fetches available subscription plans from the backend,
+ * displays them to the user, and handles the creation of a Stripe Checkout
+ * session to initiate the payment process.
+ */
+
+// --- Data Shape for Subscription Plans ---
 interface Plan {
-    id: string;
+    id: string; // The Price ID from Stripe (e.g., price_123...)
     name: string;
     description: string;
-    price: number; // in cents
+    price: number; // Price in cents
     currency: string;
     interval: string;
 }
 
-export const SubscriptionModal = ({ onClose }: { onClose: () => void }) => {
+export const SubscriptionModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const { user } = useAuth();
     const [plans, setPlans] = useState<Plan[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
-    const [isRedirecting, setIsRedirecting] = useState(false);
-    
-    // This is a new variable to hold the base URL for API calls
-    const API_URL = process.env.REACT_APP_API_URL;
+    const [isRedirecting, setIsRedirecting] = useState<string | null>(null);
 
-    // Fetch the subscription plans from our backend when the modal opens
+    const API_URL = import.meta.env.VITE_API_URL || '';
+
     useEffect(() => {
         const fetchPlans = async () => {
+            if (!API_URL) {
+                console.error("VITE_API_URL is not set. Cannot fetch plans.");
+                setError("Configuration error: The server address is not set.");
+                setIsLoading(false);
+                return;
+            }
+
             try {
-                // Use the full URL and include credentials
                 const response = await fetch(`${API_URL}/api/stripe/plans`, {
                     credentials: 'include'
                 });
+
                 if (!response.ok) {
                     const errData = await response.json();
-                    throw new Error(errData.message || 'Failed to fetch plans.');
+                    throw new Error(errData.message || 'Failed to fetch subscription plans.');
                 }
                 const data = await response.json();
                 setPlans(data);
@@ -45,13 +60,12 @@ export const SubscriptionModal = ({ onClose }: { onClose: () => void }) => {
         };
 
         fetchPlans();
-    }, [API_URL]); // Added API_URL to dependency array
+    }, [API_URL]);
 
     const handleSubscribe = async (priceId: string) => {
-        setIsRedirecting(true);
+        setIsRedirecting(priceId);
         setError('');
         try {
-            // Use the full URL and include credentials
             const response = await fetch(`${API_URL}/api/stripe/create-checkout-session`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -61,62 +75,70 @@ export const SubscriptionModal = ({ onClose }: { onClose: () => void }) => {
 
             const data = await response.json();
             if (!response.ok) {
-                throw new Error(data.message || 'Failed to create checkout session.');
+                throw new Error(data.message || 'Could not initiate the subscription process.');
             }
 
-            // Redirect the user to the Stripe Checkout page
             window.location.href = data.url;
 
         } catch (err: any) {
             setError(err.message);
-            setIsRedirecting(false);
+            setIsRedirecting(null);
         }
     };
 
-    // Helper to format price from cents to dollars
     const formatPrice = (amount: number, currency: string) => {
         return (amount / 100).toLocaleString('en-US', {
             style: 'currency',
-            currency: currency,
+            currency: currency.toUpperCase(),
         });
     };
 
     return (
         <Modal title="Manage Subscription" onClose={onClose}>
-            <div className="p-4 text-gray-300">
-                {isLoading && (
+            <div className="p-4 sm:p-6 text-gray-300">
+                {isLoading === true && (
                     <div className="flex justify-center items-center h-48">
                         <SpinnerIcon className="animate-spin h-8 w-8 text-cyan-400" />
                     </div>
                 )}
-                {error && <p className="text-red-500 text-center mb-4">{error}</p>}
-                
-                {!isLoading && !error && (
+
+                {error && <p className="text-red-400 bg-red-900/50 border border-red-500/50 text-center text-sm rounded-md p-3 mb-4">{error}</p>}
+
+                {isLoading === false && !error && (
                     <div className="space-y-4">
-                        <div className="text-center bg-gray-900 p-3 rounded-md">
+                        <div className="text-center bg-gray-900/70 p-3 rounded-md border border-cyan-800/50">
                             <p className="text-sm text-gray-400">Current Plan</p>
-                            <p className="text-xl font-bold text-cyan-400 capitalize">{user?.subscription.tier || 'Free'}</p>
+                            <p className="text-xl font-bold text-cyan-400 capitalize">
+                                {user?.subscription.tier || 'Free'}
+                            </p>
                         </div>
 
-                        {plans.map(plan => (
-                            <div key={plan.id} className="bg-gray-800/60 p-4 rounded-lg border border-cyan-700/50 flex justify-between items-center">
-                                <div>
-                                    <h3 className="font-bold text-white text-lg">{plan.name}</h3>
-                                    <p className="text-sm text-gray-400">{plan.description}</p>
-                                    <p className="text-lg font-mono text-cyan-400 mt-1">
-                                        {formatPrice(plan.price, plan.currency)} / {plan.interval}
-                                    </p>
+                        {plans.map(plan => {
+                            const isCurrentPlan = user?.subscription.tier === plan.name.toLowerCase();
+                            const isRedirectingThisPlan = isRedirecting === plan.id;
+
+                            return (
+                                <div key={plan.id} className={`bg-gray-800/60 p-4 rounded-lg border ${isCurrentPlan ? 'border-cyan-500' : 'border-cyan-700/50'}`}>
+                                    <div className="flex flex-col sm:flex-row justify-between sm:items-center">
+                                        <div className="mb-4 sm:mb-0">
+                                            <h3 className="font-bold text-white text-lg">{plan.name}</h3>
+                                            <p className="text-sm text-gray-400">{plan.description}</p>
+                                            <p className="text-lg font-mono text-cyan-400 mt-1">
+                                                {formatPrice(plan.price, plan.currency)} / {plan.interval}
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={() => handleSubscribe(plan.id)}
+                                            disabled={isCurrentPlan || !!isRedirecting}
+                                            className="w-full sm:w-auto bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2 px-4 rounded-md transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                                        >
+                                            {isRedirectingThisPlan ? <SpinnerIcon className="animate-spin h-5 w-5" /> : <CreditCardIcon />}
+                                            <span>{isCurrentPlan ? 'Current Plan' : 'Subscribe'}</span>
+                                        </button>
+                                    </div>
                                 </div>
-                                <button
-                                    onClick={() => handleSubscribe(plan.id)}
-                                    disabled={isRedirecting || user?.subscription.tier === plan.name.toLowerCase()}
-                                    className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2 px-4 rounded-md transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed flex items-center space-x-2"
-                                >
-                                    {isRedirecting ? <SpinnerIcon className="animate-spin h-5 w-5" /> : <CreditCardIcon />}
-                                    <span>{user?.subscription.tier === plan.name.toLowerCase() ? 'Current Plan' : 'Subscribe'}</span>
-                                </button>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>

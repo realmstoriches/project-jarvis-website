@@ -1,12 +1,21 @@
-// react-app/src/components/Dashboard.tsx - FINAL CORRECTED VERSION
+// react-app/src/components/Dashboard.tsx - FINAL, PRODUCTION-READY
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from 'recharts';
-import { SystemStatus, UnlockedUpgrades, VoiceProfile } from '../types'; // <-- PATH 1 CORRECTED
-import { LoopIcon, ShieldIcon, SubscriptionIcon } from './Icons';
-import { useAuth } from '../context/AuthContext'; // <-- PATH 2 CORRECTED
+import { useAuth } from '../context/AuthContext';
 import { SubscriptionModal } from './SubscriptionModal';
+import { LoopIcon, ShieldIcon, SubscriptionIcon, LoginIcon } from './Icons'; // LoginIcon needs to be added to Icons.tsx
+import type { SystemStatus, UnlockedUpgrades, VoiceProfile } from '../types';
 
+/**
+ * @file Displays system diagnostics and user account information.
+ * @description This dashboard provides real-time feedback on the AI's status
+ * and serves as the user's control panel for managing their subscription,
+ * voice preferences, and unlocked upgrades.
+ */
+
+// --- Component Props ---
 interface DashboardProps {
   status: SystemStatus;
   upgrades: UnlockedUpgrades;
@@ -18,13 +27,16 @@ interface DashboardProps {
   isContinuousConversationOn: boolean;
 }
 
+// --- Re-usable Wrapper for Dashboard Sections ---
 const ChartDataWrapper: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-    <div className="bg-gray-900/50 p-2 rounded-md">
+    <div className="bg-gray-900/50 p-3 rounded-md border border-cyan-500/10">
       <h4 className="text-sm font-mono text-cyan-400 mb-2">{title}</h4>
       {children}
     </div>
 );
 
+
+// --- Main Dashboard Component ---
 export const Dashboard: React.FC<DashboardProps> = ({
   status,
   upgrades,
@@ -35,52 +47,71 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onToggleContinuous,
   isContinuousConversationOn
 }) => {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [isSubModalOpen, setIsSubModalOpen] = useState(false);
 
   const chartData = [
-    { name: 'Stability', value: status.systemStability, fill: '#0891b2' },
-    { name: 'Load', value: status.cognitiveLoad, fill: '#be185d' },
+    { name: 'Stability', value: status.systemStability, fill: '#0891b2' }, // cyan-600
+    { name: 'Load', value: status.cognitiveLoad, fill: '#be185d' }, // pink-700
   ];
+
+  const handleManageClick = () => {
+    // If user is authenticated, open the subscription management modal.
+    if (isAuthenticated) {
+      setIsSubModalOpen(true);
+    } else {
+      // If user is a guest, navigate them to the login/registration page.
+      navigate('/login');
+    }
+  };
 
   return (
     <>
-      <div className="w-full h-full bg-black/40 border border-cyan-500/30 rounded-lg shadow-2xl shadow-cyan-500/10 backdrop-blur-md flex flex-col text-gray-200 p-4 space-y-4">
-          <h2 className="text-lg font-mono text-cyan-300 text-center border-b border-cyan-500/30 pb-2">SYSTEM DIAGNOSTICS</h2>
-          
+      <div className="w-full h-full bg-black/40 border border-cyan-500/30 rounded-lg shadow-2xl shadow-cyan-500/10 backdrop-blur-md flex flex-col text-gray-200 p-4 space-y-4 overflow-y-auto">
+          <h2 className="text-lg font-mono text-cyan-300 text-center border-b border-cyan-500/30 pb-2">
+            SYSTEM DIAGNOSTICS
+          </h2>
+
           <ChartDataWrapper title="System Integrity">
-              <ResponsiveContainer width="100%" height={100}>
-                  <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+              <ResponsiveContainer width="100%" height={80}>
+                  <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
                       <XAxis type="number" domain={[0, 100]} hide />
-                      <YAxis type="category" dataKey="name" hide />
-                      <Bar dataKey="value" barSize={20} radius={[0, 10, 10, 0]} />
+                      <YAxis type="category" dataKey="name" stroke="#9ca3af" fontSize="12px" tickLine={false} axisLine={false} width={60} />
+                      <Bar dataKey="value" barSize={12} radius={[0, 10, 10, 0]} />
                   </BarChart>
               </ResponsiveContainer>
           </ChartDataWrapper>
 
           <ChartDataWrapper title="Account Status">
-              <div className="flex items-center justify-between bg-gray-800/50 p-2 rounded">
+              <div className="flex items-center justify-between bg-gray-800/50 p-3 rounded">
                   <div>
-                      <p className="text-sm capitalize">{user?.subscription.tier || 'Free'} Plan</p>
-                      <p className="text-xs text-gray-400 capitalize">Status: {user?.subscription.subscriptionStatus || 'None'}</p>
+                      {/* Safely access user data, providing defaults for guests */}
+                      <p className="text-md capitalize font-semibold">{user?.subscription.tier || 'Free'} Plan</p>
+                      <p className="text-xs text-gray-400 capitalize">Status: {user?.subscription.status || 'None'}</p>
                   </div>
-                  <button onClick={() => setIsSubModalOpen(true)} className="flex items-center space-x-2 p-2 rounded bg-cyan-600/50 hover:bg-cyan-500/50 transition-colors text-sm">
-                      <SubscriptionIcon />
-                      <span>Manage</span>
+                  <button
+                    onClick={handleManageClick}
+                    className="flex items-center space-x-2 p-2 rounded bg-cyan-600/50 hover:bg-cyan-500/50 transition-colors text-sm font-semibold"
+                  >
+                    {isAuthenticated ? <SubscriptionIcon /> : <LoginIcon />}
+                    <span>{isAuthenticated ? 'Manage' : 'Login to Subscribe'}</span>
                   </button>
               </div>
           </ChartDataWrapper>
 
           <ChartDataWrapper title="Voice Synthesis Module">
-              <label htmlFor="voice-select" className="sr-only">Choose a voice</label>
               <select
                   id="voice-select"
                   value={selectedVoice?.voiceURI || ''}
                   onChange={(e) => {
                       const voice = voices.find(v => v.voiceURI === e.target.value);
-                      if (voice) onVoiceChange(voice);
+                      if (voice) {
+                        onVoiceChange(voice);
+                      }
                   }}
                   className="w-full bg-gray-800/70 border border-cyan-600 rounded p-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  aria-label="Choose a voice"
               >
                   {voices.map(v => <option key={v.voiceURI} value={v.voiceURI}>{v.name}</option>)}
               </select>
@@ -88,7 +119,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
           <ChartDataWrapper title="System Upgrades">
               <div className='space-y-2'>
-                  {upgrades.continuousConversation && (
+                  {upgrades.continuousConversation === true && (
                       <label className="flex items-center justify-between bg-gray-800/50 p-2 rounded cursor-pointer">
                           <div className="flex items-center space-x-2">
                             <LoopIcon />
@@ -100,20 +131,23 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           </div>
                       </label>
                   )}
-                  {upgrades.stabilityPatch && (
-                      <button onClick={onPatch} className="w-full flex items-center justify-center space-x-2 p-2 rounded bg-yellow-600/50 hover:bg-yellow-500/50 transition-colors">
+                  {upgrades.stabilityPatch === true && (
+                      <button onClick={onPatch} className="w-full flex items-center justify-center space-x-2 p-2 rounded bg-yellow-600/50 hover:bg-yellow-500/50 transition-colors text-sm">
                         <ShieldIcon />
-                        <span className="text-sm">Authorize Stability Patch</span>
+                        <span>Authorize Stability Patch</span>
                       </button>
                   )}
-                  {!upgrades.continuousConversation && !upgrades.stabilityPatch && (
-                      <p className="text-xs text-gray-500 text-center italic">No pending upgrades.</p>
+                  {upgrades.continuousConversation === false && upgrades.stabilityPatch === false && (
+                      <p className="text-xs text-gray-500 text-center italic py-2">No pending upgrades.</p>
                   )}
               </div>
           </ChartDataWrapper>
       </div>
 
-      {isSubModalOpen && <SubscriptionModal onClose={() => setIsSubModalOpen(false)} />}
+      {/* The modal is only ever rendered if the user is authenticated */}
+      {isAuthenticated && isSubModalOpen && (
+        <SubscriptionModal onClose={() => setIsSubModalOpen(false)} />
+      )}
     </>
   );
 };

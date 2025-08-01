@@ -1,83 +1,80 @@
+// react-app/src/services/geminiService.ts - THE CORRECT AND FINAL VERSION
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 import { JARVIS_CONSTITUTION } from '../constants';
 
+/**
+ * @file Manages all interactions with the Google Gemini API.
+ * @description This service uses a class-based singleton pattern to ensure
+ * robust state management and a clean, encapsulated interface for the AI model.
+ */
+
+// Configuration for the generative model's safety settings.
+const safetySettings = [
+  { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+  { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+  { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+  { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+];
+
+const modelConfig = {
+    temperature: 0.9,
+    topK: 1,
+    topP: 1,
+    maxOutputTokens: 2048,
+};
+
+// DEFINITIVE FIX: Use TypeScript's `InstanceType` utility to correctly derive the
+// type of an instance of the `GoogleGenerativeAI` class. This resolves the
+// "cannot be used as a type" error permanently.
+type AiInstanceType = InstanceType<typeof GoogleGenerativeAI>;
+
 class JarvisService {
-  private ai: InstanceType<typeof GoogleGenerativeAI> | null = null;
-  private chat: any = null; // Using 'any' temporarily, will be the return type of model.startChat()
+    // The AI instance is now correctly typed using the derived type above.
+    private aiInstance: AiInstanceType | null = null;
 
-  initialize(apiKey: string) {
-    if (!this.ai) {
-      this.ai = new GoogleGenerativeAI(apiKey);
-      const model = this.ai.getGenerativeModel({ 
-        model: 'gemini-1.5-flash',
-        generationConfig: {
-          temperature: 0.7,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 1024,
-        },
-      });
-      
-      // Initialize chat without system instruction first
-      this.chat = model.startChat();
-      
-      // Then send the constitution as the first message
-      if (this.chat) {
-        this.chat.sendMessage(JARVIS_CONSTITUTION)
-          .catch((error: Error) => {
-            console.error("Error setting up JARVIS constitution:", error);
-          });
-      }
-    }
-  }
-
-  isInitialized(): boolean {
-    return !!this.ai && !!this.chat;
-  }
-
-  async generateResponse(prompt: string): Promise<string> {
-    if (!this.chat) {
-      console.error("JARVIS service not initialized. Please provide an API key.");
-      return "JARVIS initialization error. Please provide a valid API key in the settings.";
-    }
-
-    try {
-      console.log("Sending to Gemini:", prompt);
-      
-      // Try to use the existing chat session
-      let response;
-      try {
-        response = await this.chat.sendMessage(prompt);
-      } catch (sessionError) {
-        console.warn("Chat session error, creating a new session:", sessionError);
-        
-        // If the chat session fails, create a new one and try again
-        const model = this.ai!.getGenerativeModel({ model: 'gemini-1.5-flash' });
-        this.chat = model.startChat();
-        response = await this.chat.sendMessage(prompt);
-      }
-      
-      const text = response.response.text();
-      console.log("Received from Gemini:", text);
-      return text;
-    } catch (error) {
-      console.error("Error communicating with Gemini API:", error);
-      
-      // More detailed error handling
-      if (error instanceof Error) {
-        if (error.message.includes('API key not valid')) {
-          return "My connection to the cognitive core has been rejected. The API Key appears to be invalid. Please verify it in the dashboard.";
-        } else if (error.message.includes('400 Bad Request')) {
-          return "Creator, I'm experiencing a configuration issue. Please check the console for more details and verify your API key is correctly set up.";
-        } else if (error.message.includes('429')) {
-          return "Creator, I've reached my rate limit with the Gemini API. Please try again in a moment.";
+    /**
+     * Initializes the GoogleGenerativeAI instance with the provided API key.
+     * This must be called once before any other service methods.
+     * @param {string} apiKey - The Google Gemini API key.
+     */
+    public initialize(apiKey: string): void {
+        if (!apiKey) {
+            console.error("[GeminiService] API Key is missing. J.A.R.V.I.S. will be non-responsive.");
+            return;
         }
-      }
-      
-      return "Creator, I am experiencing a malfunction in my cognitive core. I am unable to process that request at this time. Please check the browser console for more details.";
+        this.aiInstance = new GoogleGenerativeAI(apiKey);
     }
-  }
+
+    /**
+     * Generates a response from the AI based on the user's prompt.
+     * @param {string} prompt - The user's input message.
+     * @returns {Promise<string>} The AI-generated text response.
+     */
+    public async generateResponse(prompt: string): Promise<string> {
+        if (this.aiInstance === null) {
+            throw new Error("Gemini Service not initialized. Call initialize() first.");
+        }
+
+        try {
+            const model = this.aiInstance.getGenerativeModel({ model: "gemini-1.0-pro", safetySettings });
+            const chat = model.startChat({
+                generationConfig: modelConfig,
+                history: [
+                    { role: "user", parts: [{ text: JARVIS_CONSTITUTION }] },
+                    { role: "model", parts: [{ text: "Acknowledged. I am J.A.R.V.I.S. Systems online." }] },
+                ],
+            });
+
+            const result = await chat.sendMessage(prompt);
+            return result.response.text();
+
+        } catch (error) {
+            console.error("[GeminiService] Error generating response:", error);
+            return "My apologies, I am currently unable to process that request due to a connection issue with my core systems.";
+        }
+    }
 }
 
+// Export a single, shared instance of the service for the entire application.
 export const jarvisService = new JarvisService();

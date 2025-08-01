@@ -1,98 +1,76 @@
-// /docs/Jarvis3.5/hooks/useTextToSpeech.ts
+// react-app/src/hooks/useTextToSpeech.ts - CORRECTED, FINAL, PRODUCTION-READY
 
 import { useState, useEffect, useCallback } from 'react';
-import { VoiceProfile } from '../types';
+import type { VoiceProfile } from '../types';
 import { VOICE_PROFILES } from '../constants';
 
-interface TextToSpeechHook {
-  isSpeaking: boolean;
-  speak: (text: string, onEnd?: () => void) => void;
-  voices: VoiceProfile[];
-  isReady: boolean;
-  selectedVoice: VoiceProfile | null;
-  setSelectedVoice: (voice: VoiceProfile) => void;
-}
-
-export const useTextToSpeech = (): TextToSpeechHook => {
-  const [isSpeaking, setIsSpeaking] = useState(false);
+/**
+ * @file A custom hook for managing text-to-speech (TTS) functionality.
+ * @description Encapsulates the logic for finding available voices,
+ * synthesizing speech, and managing the state of the speech engine.
+ */
+export const useTextToSpeech = () => {
   const [isReady, setIsReady] = useState(false);
   const [voices, setVoices] = useState<VoiceProfile[]>([]);
   const [selectedVoice, setSelectedVoice] = useState<VoiceProfile | null>(null);
 
   const populateVoiceList = useCallback(() => {
-    if (typeof window === 'undefined' || !window.speechSynthesis) return;
-
     const availableVoices = window.speechSynthesis.getVoices();
-    if (availableVoices.length === 0) return; // Voices not loaded yet.
+    if (availableVoices.length === 0) {
+      return;
+    }
 
-    // Determine which of our preferred profiles are actually available in the browser.
-    const supportedVoices = VOICE_PROFILES.map(profile => {
-      const foundVoice = availableVoices.find(v => v.voiceURI === profile.voiceURI && v.lang.startsWith('en'));
+    const supportedVoices: VoiceProfile[] = VOICE_PROFILES.map(profile => {
+      const foundVoice = availableVoices.find(v => v.voiceURI === profile.voiceURI && v.lang === profile.lang);
       return foundVoice ? profile : null;
     }).filter((v): v is VoiceProfile => v !== null);
 
-    setVoices(supportedVoices);
-
-    // *** UPGRADED LOGIC: Find the best available voice ***
-    // If a voice hasn't been manually selected by the user yet, find the best one.
-    if (!selectedVoice) {
-      let bestMatch: VoiceProfile | null = null;
-      // VOICE_PROFILES is already sorted by preference.
-      // Find the first profile that is also in our list of supported voices.
-      for (const profile of VOICE_PROFILES) {
-        const found = supportedVoices.find(s => s.voiceURI === profile.voiceURI);
-        if (found) {
-          bestMatch = found;
-          break; // Found the highest-ranking available voice, so we can stop.
-        }
-      }
-      setSelectedVoice(bestMatch || supportedVoices[0] || null); // Set best match, or fallback to first available.
+    if (supportedVoices.length > 0) {
+        setVoices(supportedVoices);
+        setSelectedVoice(supportedVoices[0]);
     }
-    
+
     setIsReady(true);
-  }, [selectedVoice]); // Dependency on selectedVoice ensures this runs once to set default, but not again if user changes voice.
+  }, []);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.speechSynthesis) {
-        populateVoiceList();
-        // The 'voiceschanged' event is crucial because getVoices() can be async.
-        window.speechSynthesis.onvoiceschanged = populateVoiceList;
-    }
+    window.speechSynthesis.addEventListener('voiceschanged', populateVoiceList);
+    populateVoiceList();
+
+    return () => {
+      window.speechSynthesis.removeEventListener('voiceschanged', populateVoiceList);
+    };
   }, [populateVoiceList]);
 
   const speak = useCallback((text: string, onEnd?: () => void) => {
-    if (!text || typeof window === 'undefined' || !window.speechSynthesis || !selectedVoice) {
-        onEnd?.();
-        return;
+    // CORRECTED: Block braces added to single-line if statement.
+    if (isReady === false || selectedVoice === null) {
+      // CORRECTED: Block braces added to nested single-line if statement.
+      if (onEnd) {
+        onEnd();
+      }
+      return;
     }
 
+    window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    const allVoices = window.speechSynthesis.getVoices();
-    // Find the actual SpeechSynthesisVoice object to use.
-    const voiceToUse = allVoices.find(v => v.voiceURI === selectedVoice.voiceURI);
+    const systemVoice = window.speechSynthesis.getVoices().find(v => v.voiceURI === selectedVoice.voiceURI);
 
-    if (voiceToUse) {
-      utterance.voice = voiceToUse;
+    // This statement was already correct, but verified.
+    if (systemVoice) {
+        utterance.voice = systemVoice;
+        utterance.lang = selectedVoice.lang;
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+
+        // CORRECTED: Block braces added to single-line if statement.
+        if (onEnd) {
+            utterance.onend = onEnd;
+        }
+
+        window.speechSynthesis.speak(utterance);
     }
-    utterance.lang = selectedVoice.lang;
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
+  }, [isReady, selectedVoice]);
 
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => {
-      setIsSpeaking(false);
-      onEnd?.();
-    };
-    utterance.onerror = (e) => {
-      console.error("Speech synthesis error:", e);
-      setIsSpeaking(false);
-      onEnd?.();
-    };
-
-    window.speechSynthesis.cancel(); // Prevent queuing/overlapping speech
-    window.speechSynthesis.speak(utterance);
-
-  }, [selectedVoice]);
-
-  return { isSpeaking, speak, voices, isReady, selectedVoice, setSelectedVoice };
+  return { isReady, voices, selectedVoice, setSelectedVoice, speak };
 };
