@@ -1,7 +1,7 @@
 // backend/server.js - FINAL, PRODUCTION-READY & FULLY CORRECTED
 
 const path = require('path');
-require('dotenv').config();
+require('dotenv').config(); // Load environment variables first
 const express = require('express');
 const mongoose = require('mongoose');
 const session = require('express-session');
@@ -26,9 +26,6 @@ mongoose.connect(process.env.MONGO_URI)
         process.exit(1);
     });
     
-// --- THE DEFINITIVE FIX (PART 1): TRUST THE PROXY ---
-// This tells Express to trust the 'X-Forwarded-*' headers set by Render's reverse proxy.
-// This is essential for secure cookies and correct IP address information in production.
 app.set('trust proxy', 1);
 
 // --- 3. CORE MIDDLEWARE ---
@@ -42,40 +39,41 @@ app.use(helmet({
             connectSrc: ["'self'", "https://api.stripe.com", "https://generativelanguage.googleapis.com", "https://www.google-analytics.com", "https://formspree.io"],
             imgSrc: ["'self'", "data:", "https://*.stripe.com", "https://*.stripecdn.com"],
             fontSrc: ["'self'", "https://cdnjs.cloudflare.com"],
-            frameSrc: ["'self'", "https://js.stripe.com", "https://hooks.stripe.com"],
+            // --- THE DEFINITIVE FIX ---
+            // This line adds Stripe's checkout page to the list of allowed frame sources,
+            // which will fix the final "Refused to frame" error and allow the redirect.
+            frameSrc: ["'self'", "https://js.stripe.com", "https://hooks.stripe.com", "https://checkout.stripe.com"],
         },
     },
     permissionsPolicy: {
         policy: { payment: ["'self'"] },
     },
 }));
+
 app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
 app.use(isProduction ? morgan('combined') : morgan('dev'));
 
-// --- 4. STRIPE WEBHOOK ROUTE (BEFORE express.json()) ---
+// --- 4. STRIPE WEBHOOK ROUTE (CRITICAL: MUST BE BEFORE express.json()) ---
 const stripeWebhookRouter = require('./src/api/routes/stripeRoutes');
 app.use('/api/stripe/webhook', stripeWebhookRouter);
 
-// --- 5. GENERAL MIDDLEWARE ---
+// --- 5. GENERAL MIDDLEWARE (BODY PARSERS, SANITIZATION) ---
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(mongoSanitize());
 
-// --- 6. AUTHENTICATION MIDDLEWARE ---
+// --- 6. AUTHENTICATION MIDDLEWARE (SESSION & PASSPORT) ---
 app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     store: MongoStore.create({ mongoUrl: process.env.MONGO_URI, collectionName: 'sessions' }),
     cookie: {
-        secure: isProduction, // In production, cookie is sent only over HTTPS
+        secure: isProduction,
         httpOnly: true,
-        sameSite: 'lax', // Use 'lax' for security. If issues persist with iframes, this can be 'none', but requires secure: true.
-        maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
+        sameSite: 'lax',
+        maxAge: 1000 * 60 * 60 * 24 * 7
     },
-    // --- THE DEFINITIVE FIX (PART 2): MAKE SESSION AWARE OF PROXY ---
-    // This tells express-session to trust the proxy and use the X-Forwarded-Proto header,
-    // which allows the 'secure' cookie option to work correctly in production.
     proxy: true,
 }));
 app.use(passport.initialize());
@@ -101,7 +99,7 @@ console.log(`[INFO] Serving Jarvis app from: ${jarvisAppBuildPath}`);
 app.use('/jarvis-app', express.static(jarvisAppBuildPath));
 app.use(express.static(mainSiteBuildPath));
 
-// --- 9. SPA CATCH-ALL ROUTES ---
+// --- 9. SPA CATCH-ALL ROUTES (MUST BE LAST) ---
 app.get('/jarvis-app/*', (req, res) => {
     res.sendFile(path.join(jarvisAppBuildPath, 'index.html'));
 });
