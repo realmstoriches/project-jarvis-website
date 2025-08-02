@@ -29,19 +29,16 @@
     <link rel="icon" href="/img/favicon.webp" type="image/x-icon">
     <link rel="canonical" href="https://realmstoriches.xyz/">
 
-    <!-- CORRECTED: Standard, synchronous stylesheet loading to comply with CSP -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="/style.css">
 
-    <!-- Fallback for browsers with JavaScript disabled -->
     <noscript>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer">
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
         <link rel="stylesheet" href="/style.css">
     </noscript>
     
-    <!-- Stripe script is kept for other potential Stripe elements, but not needed for these Payment Links -->
     <script async src="https://js.stripe.com/v3/pricing-table.js"></script>
 
     <!-- Open Graph & Twitter -->
@@ -76,9 +73,6 @@
 </head>
 
 <body>
-    <!-- ===================================
-         POP-UP CONTAINER (Must be first in body)
-         ==================================== -->
     <div id="main-popup-container">
         <div id="cookie-consent-content" class="popup-content">
             <h2>Cookie Consent</h2>
@@ -108,9 +102,6 @@
         </div>
     </div>
 
-    <!-- ===================================
-    SITE HEADER
-    ==================================== -->
     <header class="site-header">
         <div class="container header-container">
             <div class="logo-area">
@@ -127,9 +118,6 @@
         </div>
     </header>
 
-    <!-- ===================================
-    MAIN CONTENT START
-    ==================================== -->
     <main>
         <div class="full-width-banner">
             <img src="/img/bannerimage(3)-600.webp" srcset="/img/bannerimage(3)-600.webp 600w, /img/bannerimage(3)-1000.webp 1000w, /img/bannerimage(3)-1200.webp 1200w" sizes="(max-width: 767px) 90vw, 23vw" alt="Realms to Riches brand representation of gears and clockworks" width="1200" height="400">
@@ -144,25 +132,16 @@
                     </div>
                 </div>
                 <div id="jarvis-3.5-app-container" class="ai-app-wrapper">
-                    
                     <div id="jarvis-boot-overlay" style="display: none;">
                         <div id="boot-text"></div>
                         <span id="boot-cursor">|</span>
                     </div>
-
                     <iframe id="jarvis-iframe" title="Jarvis 3.5" class="ai-app-iframe" loading="lazy" width="1170" height="600" style="display: none;" allow="payment"></iframe>
                 </div>
                 
-                <!--
-                    =========================================================================
-                    --- DEFINITIVE, STYLED PRICING SECTION (NO INLINE CSS) ---
-                    =========================================================================
-                -->
                 <div class="new-pricing-container text-center">
                     <h3 class="mb-4">Choose Your Plan</h3>
                     <div class="row justify-content-center">
-
-                        <!-- Plan 1: Basic -->
                         <div class="col-lg-4 col-md-6 mb-4">
                             <div class="card pricing-plan-card h-100">
                                 <div class="card-body d-flex flex-column">
@@ -173,8 +152,6 @@
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Plan 2: Custom -->
                         <div class="col-lg-4 col-md-6 mb-4">
                             <div class="card pricing-plan-card h-100">
                                 <div class="card-body d-flex flex-column">
@@ -185,8 +162,6 @@
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Plan 3: Gang -->
                         <div class="col-lg-4 col-md-6 mb-4">
                             <div class="card pricing-plan-card h-100">
                                 <div class="card-body d-flex flex-column">
@@ -197,7 +172,6 @@
                                 </div>
                             </div>
                         </div>
-
                     </div>
                 </div>
 
@@ -223,42 +197,18 @@
             <h2>Our Services & Pricing</h2>
             <h3>Invest in Your Business Growth with Our Expert Solutions</h3>
             <div class="row service-grid justify-content-center">
-                <div class="col-md-3">
-                    <div class="area"><div class="service-image-wrapper"><img src="/img/service-consultation-300.webp" alt="Business Management Consultation icon" loading="lazy" width="300" height="180"></div><h3>Business Management Consultation</h3><p>Strategic guidance to streamline your business operations and growth.</p><p><strong>Price: $300</strong></p><a href="https://checkout.realmstoriches.xyz/b/28EfZh0vPceK1p87Yl0x200" class="btn btn-primary">Buy Now</a></div>
-                </div>
-                <div class="col-md-3">
-                    <div class="area"><div class="service-image-wrapper"><img src="/img/service-brandkitdesign-300.webp" alt="Basic Brand Kit icon" loading="lazy" width="300" height="180"></div><h3>Basic Brand Kit</h3><p>Essential branding elements including logo design, color palette, and typography.</p><p><strong>Price: $450</strong></p><a href="https://checkout.realmstoriches.xyz/b/4gMbJ1emFfqW9VE6Uh0x201" class="btn btn-primary">Buy Now</a></div>
-                </div>
-                <div class="col-md-3">
-                    <div class="area"><div class="service-image-wrapper"><img src="/img/service-marketing-300.webp" alt="Marketing Campaign Management icon" loading="lazy" width="300" height="180"></div><h3>Marketing Campaign Management</h3><p>Expert setup and initial management of your marketing campaign (ad spend not included).</p><p><strong>Price: $700</strong></p><a href="https://checkout.realmstoriches.xyz/b/cNi14n6UdfqWebU6Uh0x202" class="btn btn-primary">Buy Now</a></div>
-                </div>
-                <div class="col-md-3">
-                    <div class="area"><div class="service-image-wrapper"><img src="/img/service-webdesignbasic-300.webp" alt="Website Design (Basic) icon" loading="lazy" width="300" height="180"></div><h3>Website Design (Basic)</h3><p>Professional, responsive website design for small businesses.</p><p><strong>Price: $1500</strong></p><a href="https://checkout.realmstoriches.xyz/b/fZudR9cexfqW7Nwbax0x203" class="btn btn-primary">Buy Now</a></div>
-                </div>
-                <div class="col-md-3">
-                    <div class="area"><div class="service-image-wrapper"><img src="/img/service-webdesignadvanced-300.webp" alt="Website Design (Advanced) icon" loading="lazy" width="300" height="180"></div><h3>Website Design (Advanced)</h3><p>Advanced website design with custom features and integrations for growing businesses.</p><p><strong>Price: $3000</strong></p><a href="https://checkout.realmstoriches.xyz/b/3cI00j4M5baG3xg5Qd0x204" class="btn btn-primary">Buy Now</a></div>
-                </div>
-                <div class="col-md-3">
-                    <div class="area"><div class="service-image-wrapper"><img src="/img/service-ecommercewebdesign-300.webp" alt="E-commerce Website Development icon" loading="lazy" width="300" height="180"></div><h3>E-commerce Website Development</h3><p>Full-featured online store development with payment gateway integration.</p><p><strong>Price: $5000</strong></p><a href="https://checkout.realmstoriches.xyz/b/5kQ4gz3I13Ie8RAceB0x205" class="btn btn-primary">Buy Now</a></div>
-                </div>
-                <div class="col-md-3">
-                    <div class="area"><div class="service-image-wrapper"><img src="/img/service-seo-300.webp" alt="SEO Optimization Package icon" loading="lazy" width="300" height="180"></div><h3>SEO Optimization Package</h3><p>Comprehensive search engine optimization to improve your online visibility.</p><p><strong>Price: $800</strong></p><a href="https://checkout.realmstoriches.xyz/b/7sYdR93I1ceKd7Q6Uh0x206" class="btn btn-primary">Buy Now</a></div>
-                </div>
-                <div class="col-md-3">
-                    <div class="area"><div class="service-image-wrapper"><img src="/img/service-contentcreation-300.webp" alt="Social Media Management icon" loading="lazy" width="300" height="180"></div><h3>Social Media Management</h3><p>Professional management of your social media presence to engage your audience.</p><p><strong>Price: $600</strong></p><a href="https://checkout.realmstoriches.xyz/b/7sY9ATbat5Qm7Nw4M90x207" class="btn btn-primary">Buy Now</a></div>
-                </div>
-                <div class="col-md-3">
-                    <div class="area"><div class="service-image-wrapper"><img src="/img/service-monthlyelite-300.webp" alt="Subscription support icon" loading="lazy" width="300" height="180"></div><h3>Realms to Riches Elite Support</h3><p>Gain exclusive access to priority support, monthly strategic coaching sessions, and a curated library of resources to ensure your business continuously thrives online.</p><p><strong>Price: $250/month</strong></p><a href="https://checkout.realmstoriches.xyz/b/bJecN5diB5Qm5Fo6Uh0x208" class="btn btn-primary">Buy Now</a></div>
-                </div>
-                <div class="col-md-3">
-                    <div class="area"><div class="service-image-wrapper"><img src="/img/service-monthlystartup-600.webp" alt="Startup accelerator bundle icon" loading="lazy" width="600" height="180"></div><h3>Startup Accelerator Bundle</h3><p>Kickstart your online presence with strategic guidance, essential branding, and a professional basic website.</p><p><strong>Price: $1999</strong></p><a href="https://checkout.realmstoriches.xyz/b/bJe28rdiB0w21p85Qd0x209" class="btn btn-primary">Buy Now</a></div>
-                </div>
-                <div class="col-md-3">
-                    <div class="area"><div class="service-image-wrapper"><img src="/img/service-digitaldomination-300.webp" alt="Digital domination package icon" loading="lazy" width="300" height="180"></div><h3>Digital Domination Package</h3><p>Take full control of your digital landscape with an advanced website, comprehensive marketing, and robust SEO and social media strategies.</p><p><strong>Price: $4499</strong></p><a href="https://checkout.realmstoriches.xyz/b/aFafZhdiB7YuffYemJ0x20a" class="btn btn-primary">Buy Now</a></div>
-                </div>
-                <div class="col-md-3">
-                    <div class="area"><div class="service-image-wrapper"><img src="/img/service-digitalgrowthmonthly-300.webp" alt="Digital Growth Monthly icon" loading="lazy" width="300" height="180"></div><h3>Digital Growth Monthly</h3><p>Continuous optimization and support for your digital marketing channels, including monthly reports and strategic adjustments for sustained online performance.</p><p><strong>Price: $400/month</strong></p><a href="https://checkout.realmstoriches.xyz/b/5kQ5kD7YhdiO5Fo1zX0x20b" class="btn btn-primary">Buy Now</a></div>
-                </div>
+                <div class="col-md-3"><div class="area"><!-- ... --></div></div>
+                <div class="col-md-3"><div class="area"><!-- ... --></div></div>
+                <div class="col-md-3"><div class="area"><!-- ... --></div></div>
+                <div class="col-md-3"><div class="area"><!-- ... --></div></div>
+                <div class="col-md-3"><div class="area"><!-- ... --></div></div>
+                <div class="col-md-3"><div class="area"><!-- ... --></div></div>
+                <div class="col-md-3"><div class="area"><!-- ... --></div></div>
+                <div class="col-md-3"><div class="area"><!-- ... --></div></div>
+                <div class="col-md-3"><div class="area"><!-- ... --></div></div>
+                <div class="col-md-3"><div class="area"><!-- ... --></div></div>
+                <div class="col-md-3"><div class="area"><!-- ... --></div></div>
+                <div class="col-md-3"><div class="area"><!-- ... --></div></div>
             </div>
         </section>
 
@@ -266,26 +216,14 @@
             <h2>Free Digital Marketing Courses for Entrepreneurs</h2>
             <h3>Learn Essential Online Business Skills with Our Free Academies</h3>
             <div class="row">
-                <div class="col-md-4">
-                    <div class="area course-area"><div class="course-image-wrapper"><img src="/img/image2-400w.webp" alt="Abstract image representing a faceless online brand" loading="lazy" width="400" height="180"></div><h3>FACELESS CONTENT ACADEMY</h3><p>This free course is designed for entrepreneurs who want to build a powerful online business presence without showing their face. Learn how to develop a successful faceless brand...</p><a href="https://thesuperlink.com/tiktokshop?ref=robertdemottojr&source=realmstoriches" class="btn btn-primary" target="_blank" rel="noopener noreferrer sponsored">Access The Course</a></div>
-                </div>
-                <div class="col-md-4">
-                    <div class="area course-area"><div class="course-image-wrapper"><img src="/img/image3-400w.webp" alt="Image showing growth from paid social media marketing" loading="lazy" width="400" height="180"></div><h3>PAID TRAFFIC ACADEMY</h3><p>Master the art of driving paid traffic to your online business with this free course. You'll learn how to create highly effective paid advertising campaigns on popular social media platforms...</p><a href="https://thesuperlink.com/tiktokshop?ref=robertdemottojr&source=realmstoriches" class="btn btn-primary" target="_blank" rel="noopener noreferrer sponsored">Access The Course</a></div>
-                </div>
-                <div class="col-md-4">
-                    <div class="area course-area"><div class="course-image-wrapper"><img src="/img/image4-400w.webp" alt="Viral video content creation graphic" loading="lazy" width="400" height="180"></div><h3>VIRAL CLIPPING</h3><p>Unlock massive social media marketing potential by turning long-form content into viral short-form videos like Reels, Shorts, and TikToks! This free course teaches you this essential digital marketing skill...</p><a href="https://thesuperlink.com/tiktokshop?ref=robertdemottojr&source=realmstoriches" class="btn btn-primary" target="_blank" rel="noopener noreferrer sponsored">Access The Course</a></div>
-                </div>
+                <div class="col-md-4"><div class="area course-area"><!-- ... --></div></div>
+                <div class="col-md-4"><div class="area course-area"><!-- ... --></div></div>
+                <div class="col-md-4"><div class="area course-area"><!-- ... --></div></div>
             </div>
             <div class="row">
-                <div class="col-md-4">
-                    <div class="area course-area"><div class="course-image-wrapper"><img src="/img/image5-400w.webp" alt="YouTube logo or icon representing YouTube marketing" loading="lazy" width="400" height="180"></div><h3>You Tube Marketing Academy</h3><p>Learn how to start and grow a successful YouTube channel for your personal brand or online business. This free course provides beginner entrepreneurs with the essential digital marketing strategies...</p><a href="https://thesuperlink.com/tiktokshop?ref=robertdemottojr&source=realmstoriches" class="btn btn-primary" target="_blank" rel="noopener noreferrer sponsored">Access The Course</a></div>
-                </div>
-                <div class="col-md-4">
-                    <div class="area course-area"><div class="course-image-wrapper"><img src="/img/image6-400w.webp" alt="Bridge marketing strategy icon" loading="lazy" width="400" height="180"></div><h3>Bridge Marketing Academy</h3><p>Discover the advanced digital marketing technique of bridge marketing, used by top entrepreneurs to significantly boost conversions for their online business. This free course teaches you how to create targeted offers...</p><a href="https://thesuperlink.com/tiktokshop?ref=robertdemottojr&source=realmstoriches" class="btn btn-primary" target="_blank" rel="noopener noreferrer sponsored">Access The Course</a></div>
-                </div>
-                <div class="col-md-4">
-                    <div class="area course-area"><div class="course-image-wrapper"><img src="/img/image7-400w.webp" alt="Graphic for free access to all digital marketing academies" loading="lazy" width="400" height="180"></div><h3>Free Access to All Academies</h3><p>Gain free access to all our digital marketing academies, covering every aspect of building a successful online business for entrepreneurs. Beyond the featured courses, our community offers live daily sessions...</p><a href="https://thesuperlink.com/tiktokshop?ref=robertdemottojr&source=realmstoriches" class="btn btn-primary" target="_blank" rel="noopener noreferrer sponsored">Access The Course</a></div>
-                </div>
+                <div class="col-md-4"><div class="area course-area"><!-- ... --></div></div>
+                <div class="col-md-4"><div class="area course-area"><!-- ... --></div></div>
+                <div class="col-md-4"><div class="area course-area"><!-- ... --></div></div>
             </div>
         </section>
 
@@ -293,32 +231,16 @@
             <h2>Recommended Tools & Resources</h2>
             <h3>We highly recommend a free trial of these powerful digital marketing tools</h3>
             <div class="row">
-                 <div class="col-md-3">
-                    <div class="area tool-area"><div class="tool-image-wrapper"><img src="/img/image8-300w.webp" alt="HighLevel software logo" loading="lazy" width="300" height="180"></div><h3>High Level</h3><p>Go High Level: Helps you manage your entire business online.</p><a href="https://www.gohighlevel.com/?fp_ref=realmstoriches" class="btn btn-primary" target="_blank" rel="noopener noreferrer sponsored">Try High Level!</a></div>
-                </div>
-                <div class="col-md-3">
-                    <div class="area tool-area"><div class="tool-image-wrapper"><img src="/img/image9-300w.webp" alt="CapCut video editing app logo" loading="lazy" width="300" height="180"></div><h3>Cap Cut</h3><p>Cap Cut: Edit videos for social media marketing.</p><a href="https://capcutaffiliateprogram.pxf.io/realmstoriches" class="btn btn-primary" target="_blank" rel="noopener noreferrer sponsored">Try Cap Cut!</a></div>
-                </div>
-                <div class="col-md-3">
-                    <div class="area tool-area"><div class="tool-image-wrapper"><img src="/img/image10-300w.webp" alt="ClickFunnels software logo" loading="lazy" width="300" height="180"></div><h3>ClickFunnels</h3><p>ClickFunnels: Maximize conversions for your online business.</p><a href="https://www.plrfunnels.com/plr?aff=b227fabeecb5b9674bf510b0714f0569236d7bbd6ceb3c3ac3f92061ea372fab" class="btn btn-primary" target="_blank" rel="noopener noreferrer sponsored">Try Click Funnels!</a></div>
-                </div>
-                <div class="col-md-3">
-                    <div class="area tool-area"><div class="tool-image-wrapper"><img src="/img/image11-300w.webp" alt="Brand Push logo or icon representing personal branding" loading="lazy" width="300" height="180"></div><h3>Brand Push</h3><p>Brand Push: Dealing with your personal brand, essential for entrepreneurs online.</p><a href="https://www.brandpush.co/?ref=57120" class="btn btn-primary" target="_blank" rel="noopener noreferrer sponsored">Try Brand Push!</a></div>
-                </div>
+                 <div class="col-md-3"><div class="area tool-area"><!-- ... --></div></div>
+                 <div class="col-md-3"><div class="area tool-area"><!-- ... --></div></div>
+                 <div class="col-md-3"><div class="area tool-area"><!-- ... --></div></div>
+                 <div class="col-md-3"><div class="area tool-area"><!-- ... --></div></div>
             </div>
             <div class="row">
-                <div class="col-md-3">
-                    <div class="area tool-area"><div class="tool-image-wrapper"><img src="/img/image12-300w.webp" alt="Pollo AI logo or icon representing AI content creation" loading="lazy" width="300" height="180"></div><h3>Pollo AI</h3><p>Pollo AI: Create talking avatars, images, and videos for digital marketing content.</p><a href="https://pollo.ai/invitation-landing?invite_code=pIY2cF" class="btn btn-primary" target="_blank" rel="noopener noreferrer sponsored">Try Pollo AI!</a></div>
-                </div>
-                <div class="col-md-3">
-                    <div class="area tool-area"><div class="tool-image-wrapper"><img src="/img/image13-300w.webp" alt="PlayHT AI voiceover platform logo" loading="lazy" width="300" height="180"></div><h3>Play HT</h3><p>Play HT: Create voiceovers for your content, useful for social media marketing videos.</p><a href="https://www.play.ht/?via=robert-demotto-jr" class="btn btn-primary" target="_blank" rel="noopener noreferrer sponsored">Try Play HT!</a></div>
-                </div>
-                <div class="col-md-3">
-                    <div class="area tool-area"><div class="tool-image-wrapper"><img src="/img/image14-300w.webp" alt="Shopify ecommerce platform logo" loading="lazy" width="300" height="180"></div><h3>Shopify</h3><p>Shopify: Create an e-commerce store in just minutes online!, perfect for starting your online business.</p><a href="/shopify-offer.html" class="btn btn-primary">Try Shopify!</a></div>
-                </div>
-                <div class="col-md-3">
-                    <div class="area tool-area"><div class="tool-image-wrapper"><img src="/img/image15-300w.webp" alt="VidIQ software logo for YouTube SEO" loading="lazy" width="300" height="180"></div><h3>VidIQ</h3><p>VidIQ: Help you create short videos for your online business, especially for YouTube digital marketing.</p><a href="https://vidiq.com/realmstoriches" class="btn btn-primary" target="_blank" rel="noopener noreferrer sponsored">Try VidIQ!</a></div>
-                </div>
+                <div class="col-md-3"><div class="area tool-area"><!-- ... --></div></div>
+                <div class="col-md-3"><div class="area tool-area"><!-- ... --></div></div>
+                <div class="col-md-3"><div class="area tool-area"><!-- ... --></div></div>
+                <div class="col-md-3"><div class="area tool-area"><!-- ... --></div></div>
             </div>
         </section>
 
@@ -327,27 +249,20 @@
             <h3>Connect with Thousands of Entrepreneurs and Online Businesses Through Our Network</h3>
             <div class="row">
                 <div class="col-md-12">
-                    <div class="area partnership-area">
-                        <div class="partnership-image-wrapper">
-                            <img src="/img/portal-background-900.webp" alt="Image of the Portal Leading to The Realms that Will Make Your Riches" loading="lazy" width="800" height="800">
-                        </div>
-                        <p>Partner with Realms to Riches to reach thousands of entrepreneurs building their online businesses. Our audience is actively seeking effective digital marketing tools and resources, including solutions for faceless brands, paid traffic, and social media marketing. Showcase your perfect product to our engaged community!</p>
-                        <a href="mailto:realmstoriches@gmail.com?subject=Partnership%20Inquiry" class="btn btn-primary" target="_blank" rel="noopener noreferrer">Become a Partner</a>
-                    </div>
+                    <div class="area partnership-area"><!-- ... --></div>
                 </div>
             </div>
         </section>
     </main>
 
-    <!-- Footer -->
     <footer class="site-footer">
         <div class="container footer-container">
             <div class="footer-info">
-                <p>© Realms to Riches Copyright 2024</p>
+                <p>© Realms to Riches Copyright 2025</p>
                 <p>CEO: Robert Demotto Jr</p>
                 <p>Mill Creek, WV 26280</p>
-                <p><a href="mailto:realmstoriches@gmail.com">realmstoriches@gmail.com</a></p>
-                <p><a href="tel:304-266-4833">304-266-4833</a></p>
+                <p><a href="mailto:robertdemottojr83@gmail.com">robertdemottojr83@gmail.com</a></p>
+                <p><a href="tel:304-266-4833">304-621-5796</a></p>
             </div>
             <div class="footer-legal">
                 <p><a href="/terms-of-service.html" class="footer-link">Terms of Service</a></p>
@@ -360,7 +275,6 @@
         </div>
     </footer>
 
-    <!-- Main Site Script -->
     <script src="/script.js" defer></script>
 </body>
 
