@@ -22,7 +22,6 @@ const app = express();
 const PORT = process.env.PORT || 4242;
 const isProduction = process.env.NODE_ENV === 'production';
 
-// --- Database Connection ---
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('[SUCCESS] MongoDB connected successfully.'))
     .catch(err => {
@@ -30,26 +29,35 @@ mongoose.connect(process.env.MONGO_URI)
         process.exit(1);
     });
 
-// --- Core Middleware ---
-app.use(helmet({
-    contentSecurityPolicy: {
-        directives: {
-            defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "https://js.stripe.com", "https://www.googletagmanager.com"],
-            scriptSrcAttr: ["'unsafe-inline'"],
-            styleSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://stackpath.bootstrapcdn.com"],
-            connectSrc: ["'self'", "https://api.stripe.com", "https://generativelanguage.googleapis.com", "https://www.google-analytics.com", "https://formspree.io", `ws://localhost:${PORT}`],
-            imgSrc: ["'self'", "data:", "https://*.stripe.com", "https://*.stripecdn.com"],
-            fontSrc: ["'self'", "https://cdnjs.cloudflare.com"],
-            frameSrc: ["'self'", "https://js.stripe.com", "https://hooks.stripe.com"],
+// --- CORE MIDDLEWARE ---
+app.use(
+    helmet({
+        contentSecurityPolicy: {
+            directives: {
+                defaultSrc: ["'self'"],
+                scriptSrc: ["'self'", "'unsafe-inline'", "https://js.stripe.com", "https://www.googletagmanager.com"],
+                scriptSrcAttr: ["'unsafe-inline'"],
+                styleSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://stackpath.bootstrapcdn.com"],
+                connectSrc: ["'self'", "https://api.stripe.com", "https://generativelanguage.googleapis.com", "https://www.google-analytics.com", "https://formspree.io", `ws://localhost:${PORT}`],
+                imgSrc: ["'self'", "data:", "https://*.stripe.com", "https://*.stripecdn.com"],
+                fontSrc: ["'self'", "https://cdnjs.cloudflare.com"],
+                frameSrc: ["'self'", "https://js.stripe.com", "https://hooks.stripe.com"],
+            },
         },
-    },
-}));
+        // --- DEFINITIVE FIX for Permissions-Policy ---
+        permissionsPolicy: {
+            policy: {
+                // This tells the browser that your domain ('self') is allowed to use the Payment Request API.
+                // This will resolve the final violation warning in your console.
+                payment: ["'self'"], 
+            },
+        },
+    })
+);
+
 app.use(isProduction ? morgan('combined') : morgan('dev'));
 app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
-
 app.use('/api/stripe', stripeRoutes);
-
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(mongoSanitize());
@@ -72,29 +80,18 @@ app.use('/api', apiLimiter);
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 
-// =========================================================================
-// --- CORRECTED STATIC FILE SERVING ---
-// =========================================================================
-
-// Define the absolute paths to your build directories.
+// --- STATIC FILE SERVING ---
 const mainSiteBuildPath = path.resolve(__dirname, '..', 'main-site');
 const jarvisAppBuildPath = path.resolve(__dirname, '..', 'react-app', 'dist');
-
 console.log(`[INFO] Serving main site from: ${mainSiteBuildPath}`);
 console.log(`[INFO] Serving Jarvis app from: ${jarvisAppBuildPath}`);
-
-// 1. Serve the Jarvis App under the '/jarvis-app' route
 app.use('/jarvis-app', express.static(jarvisAppBuildPath));
-
-// 2. Serve all assets for the main site from the root
 app.use(express.static(mainSiteBuildPath));
 
-// 3. SPA Catch-All for the Jarvis App
+// --- SPA CATCH-ALL ROUTES ---
 app.get('/jarvis-app/*', (req, res) => {
     res.sendFile(path.join(jarvisAppBuildPath, 'index.html'));
 });
-
-// 4. Main Site Catch-All (This MUST be last)
 app.get('*', (req, res) => {
     res.sendFile(path.join(mainSiteBuildPath, 'index.html'));
 });
