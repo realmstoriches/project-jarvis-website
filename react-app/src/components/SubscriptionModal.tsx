@@ -32,7 +32,6 @@ export const SubscriptionModal: React.FC<{ user: User | null; onClose: () => voi
             }
 
             try {
-                // CORRECTED: Added `credentials: 'include'` to send the session cookie.
                 const response = await fetch(`${API_URL}/api/stripe/plans`, {
                     credentials: 'include'
                 });
@@ -61,9 +60,6 @@ export const SubscriptionModal: React.FC<{ user: User | null; onClose: () => voi
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ priceId }),
-                // --- THE DEFINITIVE FIX ---
-                // This line tells the browser to send the session cookie with this request.
-                // This will allow the backend to recognize the user and authorize the action.
                 credentials: 'include'
             });
 
@@ -72,8 +68,15 @@ export const SubscriptionModal: React.FC<{ user: User | null; onClose: () => voi
                 throw new Error(data.message || 'Could not initiate the subscription process.');
             }
 
-            // Redirect the user to the Stripe checkout page.
-            window.location.href = data.url;
+            // --- THE DEFINITIVE FIX ---
+            // This line tells the TOP-LEVEL BROWSER WINDOW to navigate to the Stripe URL,
+            // breaking out of the iframe and satisfying Stripe's security requirements.
+            if (window.top) {
+                window.top.location.href = data.url;
+            } else {
+                // Fallback to current window if top is not available
+                window.location.href = data.url;
+            }
 
         } catch (err: any) {
             setError(err.message);
