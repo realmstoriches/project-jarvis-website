@@ -1,28 +1,15 @@
-// backend/src/api/config/passport-config.js - FINAL, PRODUCTION-READY
+// backend/src/api/config/passport-config.js - FINAL, PRODUCTION-READY & FULLY CORRECTED
 
 const LocalStrategy = require('passport-local').Strategy;
-const User = require('../../models/User'); // CORRECTED PATH
+const User = require('../../models/User');
 
 module.exports = function(passport) {
-    passport.use(
-        new LocalStrategy({ usernameField: 'email' }, async (email, password, done) => {
-            try {
-                const user = await User.findOne({ email: email.toLowerCase() });
-                if (!user) {
-                    return done(null, false, { message: 'Invalid credentials.' });
-                }
-                const isMatch = await user.comparePassword(password);
-                if (isMatch) {
-                    return done(null, user);
-                } else {
-                    return done(null, false, { message: 'Invalid credentials.' });
-                }
-            } catch (err) {
-                return done(err);
-            }
-        })
-    );
+    // --- CORRECTED: Use the User.authenticate() method provided by passport-local-mongoose ---
+    // This correctly handles hashing and comparing passwords behind the scenes.
+    passport.use(new LocalStrategy({ usernameField: 'email' }, User.authenticate()));
 
+    // These functions are correct and do not need changes.
+    // They tell Passport how to store and retrieve user data from the session.
     passport.serializeUser((user, done) => {
         done(null, user.id);
     });

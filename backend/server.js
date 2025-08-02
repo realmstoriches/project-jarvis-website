@@ -14,7 +14,6 @@ const rateLimit = require('express-rate-limit');
 const cors = require('cors');
 
 const passportConfig = require('./src/api/config/passport-config');
-const userRoutes = require('./src/api/routes/userRoutes');
 const authRoutes = require('./src/api/routes/authRoutes');
 const stripeRoutes = require('./src/api/routes/stripeRoutes');
 
@@ -77,7 +76,6 @@ passportConfig(passport);
 // --- API ROUTES ---
 const apiLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100, standardHeaders: true, legacyHeaders: false });
 app.use('/api', apiLimiter);
-app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 
 // --- STATIC FILE SERVING ---
