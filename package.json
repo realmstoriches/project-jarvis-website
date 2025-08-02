@@ -4,8 +4,5 @@
   "private": true,
   "scripts": {
     "build": "bash ./build_script.sh"
-  },
-  "dependencies": {
-    "applicationinsights": "^3.8.0"
   }
 }
