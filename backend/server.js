@@ -1,7 +1,7 @@
 // backend/server.js - FINAL, PRODUCTION-READY & FULLY CORRECTED
 
 const path = require('path');
-require('dotenv').config(); // Load environment variables first
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const session = require('express-session');
@@ -25,9 +25,13 @@ mongoose.connect(process.env.MONGO_URI)
         console.error('[CRITICAL] MongoDB connection error:', err);
         process.exit(1);
     });
+    
+// --- THE DEFINITIVE FIX (PART 1): TRUST THE PROXY ---
+// This tells Express to trust the 'X-Forwarded-*' headers set by Render's reverse proxy.
+// This is essential for secure cookies and correct IP address information in production.
+app.set('trust proxy', 1);
 
 // --- 3. CORE MIDDLEWARE ---
-// Security headers (Helmet) should be one of the first middleware.
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
@@ -45,47 +49,49 @@ app.use(helmet({
         policy: { payment: ["'self'"] },
     },
 }));
-
-// CORS must come before your API routes.
 app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
-
-// Logging
 app.use(isProduction ? morgan('combined') : morgan('dev'));
 
-// --- 4. STRIPE WEBHOOK ROUTE (CRITICAL: MUST BE BEFORE express.json()) ---
-// We mount the webhook handler on its own router before the body is parsed.
+// --- 4. STRIPE WEBHOOK ROUTE (BEFORE express.json()) ---
 const stripeWebhookRouter = require('./src/api/routes/stripeRoutes');
 app.use('/api/stripe/webhook', stripeWebhookRouter);
 
-// --- 5. GENERAL MIDDLEWARE (BODY PARSERS, SANITIZATION) ---
+// --- 5. GENERAL MIDDLEWARE ---
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(mongoSanitize());
 
-// --- 6. AUTHENTICATION MIDDLEWARE (SESSION & PASSPORT) ---
+// --- 6. AUTHENTICATION MIDDLEWARE ---
 app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     store: MongoStore.create({ mongoUrl: process.env.MONGO_URI, collectionName: 'sessions' }),
-    cookie: { secure: isProduction, httpOnly: true, sameSite: 'lax', maxAge: 1000 * 60 * 60 * 24 * 7 }
+    cookie: {
+        secure: isProduction, // In production, cookie is sent only over HTTPS
+        httpOnly: true,
+        sameSite: 'lax', // Use 'lax' for security. If issues persist with iframes, this can be 'none', but requires secure: true.
+        maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
+    },
+    // --- THE DEFINITIVE FIX (PART 2): MAKE SESSION AWARE OF PROXY ---
+    // This tells express-session to trust the proxy and use the X-Forwarded-Proto header,
+    // which allows the 'secure' cookie option to work correctly in production.
+    proxy: true,
 }));
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Configure Passport with our strategy
 const passportConfig = require('./src/api/config/passport-config');
 passportConfig(passport);
 
 // --- 7. API ROUTES ---
-// These are mounted AFTER all auth middleware is ready.
 const authRoutes = require('./src/api/routes/authRoutes');
-const stripeApiRoutes = require('./src/api/routes/stripeRoutes'); // Re-import for non-webhook routes
+const stripeApiRoutes = require('./src/api/routes/stripeRoutes');
 
 const apiLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100, standardHeaders: true, legacyHeaders: false });
 app.use('/api', apiLimiter);
 app.use('/api/auth', authRoutes);
-app.use('/api/stripe', stripeApiRoutes); // Mounts /plans and /create-checkout-session
+app.use('/api/stripe', stripeApiRoutes);
 
 // --- 8. STATIC FILE SERVING ---
 const mainSiteBuildPath = path.resolve(__dirname, '..', 'main-site');
@@ -95,7 +101,7 @@ console.log(`[INFO] Serving Jarvis app from: ${jarvisAppBuildPath}`);
 app.use('/jarvis-app', express.static(jarvisAppBuildPath));
 app.use(express.static(mainSiteBuildPath));
 
-// --- 9. SPA CATCH-ALL ROUTES (MUST BE LAST) ---
+// --- 9. SPA CATCH-ALL ROUTES ---
 app.get('/jarvis-app/*', (req, res) => {
     res.sendFile(path.join(jarvisAppBuildPath, 'index.html'));
 });
