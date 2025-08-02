@@ -13,7 +13,7 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const router = express.Router();
 
 // --- POST /api/auth/register ---
-// This now correctly handles manual user creation with your bcrypt model.
+// Handles new user registration, Stripe customer creation, and automatic login.
 router.post('/register', async (req, res, next) => {
     const { email, password } = req.body;
 
@@ -27,14 +27,14 @@ router.post('/register', async (req, res, next) => {
             return res.status(409).json({ message: 'An account with this email already exists.' });
         }
 
+        // Step 1: Create the Stripe Customer.
         console.log(`[Auth] Creating Stripe customer for email: ${email}`);
         const customer = await stripe.customers.create({ email: email, name: email });
         console.log(`[Auth] Successfully created Stripe customer: ${customer.id}`);
 
-        // Create a new User instance with the plain-text password.
-        // The 'pre-save' hook in your User.js model will AUTOMATICALLY hash it.
+        // Step 2: Create the user instance for Mongoose.
         const newUser = new User({
-            email,
+            email: email.toLowerCase(),
             password, // Provide the plain-text password here.
             subscription: {
                 stripeCustomerId: customer.id,
@@ -43,11 +43,11 @@ router.post('/register', async (req, res, next) => {
             },
         });
 
-        // Save the user. The hashing is handled by the model.
+        // Step 3: Save the user. The 'pre-save' hook in your User.js model will AUTOMATICALLY hash the password.
         await newUser.save();
         console.log(`[Auth] User ${newUser.email} saved to database successfully.`);
 
-        // Automatically log the new user in.
+        // Step 4: Automatically log the new user in.
         req.logIn(newUser, (err) => {
             if (err) {
                 console.error('[Auth] Error logging in user after registration:', err);
@@ -71,7 +71,6 @@ router.post('/register', async (req, res, next) => {
 });
 
 // --- POST /api/auth/login ---
-// This logic is correct and uses the now-fixed passport configuration.
 router.post('/login', (req, res, next) => {
     passport.authenticate('local', (err, user, info) => {
         if (err) {
@@ -98,7 +97,7 @@ router.post('/logout', (req, res, next) => {
             return next(err);
         }
         req.session.destroy(() => {
-            res.clearCookie('connect.sid');
+            res.clearCookie('connect.sid'); // Ensure the session cookie is cleared
             res.status(200).json({ message: 'Logout successful.' });
         });
     });
