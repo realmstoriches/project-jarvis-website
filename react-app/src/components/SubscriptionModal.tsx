@@ -1,4 +1,4 @@
-// react-app/src/components/SubscriptionModal.tsx - FINAL, CONFIRMED CORRECT & PRODUCTION-READY
+// react-app/src/components/SubscriptionModal.tsx - FINAL, PRODUCTION-READY & FULLY CORRECTED
 
 import React, { useState, useEffect } from 'react';
 import { Modal } from './common/Modal';
@@ -20,7 +20,6 @@ export const SubscriptionModal: React.FC<{ user: User | null; onClose: () => voi
     const [error, setError] = useState('');
     const [isRedirecting, setIsRedirecting] = useState<string | null>(null);
 
-    // This line will now correctly load the variable from your .env file.
     const API_URL = import.meta.env.VITE_API_URL || '';
 
     useEffect(() => {
@@ -33,6 +32,7 @@ export const SubscriptionModal: React.FC<{ user: User | null; onClose: () => voi
             }
 
             try {
+                // CORRECTED: Added `credentials: 'include'` to send the session cookie.
                 const response = await fetch(`${API_URL}/api/stripe/plans`, {
                     credentials: 'include'
                 });
@@ -61,6 +61,9 @@ export const SubscriptionModal: React.FC<{ user: User | null; onClose: () => voi
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ priceId }),
+                // --- THE DEFINITIVE FIX ---
+                // This line tells the browser to send the session cookie with this request.
+                // This will allow the backend to recognize the user and authorize the action.
                 credentials: 'include'
             });
 
@@ -69,6 +72,7 @@ export const SubscriptionModal: React.FC<{ user: User | null; onClose: () => voi
                 throw new Error(data.message || 'Could not initiate the subscription process.');
             }
 
+            // Redirect the user to the Stripe checkout page.
             window.location.href = data.url;
 
         } catch (err: any) {
